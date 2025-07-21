@@ -16,6 +16,17 @@ const { startScheduler, stopScheduler, getSchedulerStatus, updateSchedulerConfig
 const { getSettings, updateSettings, saveSettings, reloadSettings } = require('./src/controllers/settingsController');
 const { generateAvatar } = require('./src/services/avatarService');
 
+const { 
+  getUsers, 
+  getUser, 
+  createNewUser, 
+  updateUserProfile, 
+  removeUser,
+  getSession,
+  switchUser,
+  toggleAdminMode
+} = require('./src/controllers/userController');
+
 const app = express();
 const server = http.createServer(app);
 const PORT = settings.port || 5000;
@@ -170,6 +181,18 @@ app.get('/api/debug/characters', (req, res) => {
     res.status(500).json({ error: 'Failed to fetch debug data' });
   }
 });
+
+// User management routes
+app.get('/api/users', getUsers);
+app.get('/api/users/:id', getUser);
+app.post('/api/users', createNewUser);
+app.put('/api/users/:id', updateUserProfile);
+app.delete('/api/users/:id', removeUser);
+
+// Session management routes
+app.get('/api/session', getSession);
+app.post('/api/session/switch-user', switchUser);
+app.post('/api/session/admin-mode', toggleAdminMode);
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
