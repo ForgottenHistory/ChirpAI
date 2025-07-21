@@ -44,6 +44,7 @@ class WebSocketService {
   }
 
   // Broadcast new post to all connected clients
+  // Broadcast new post to all connected clients
   broadcastNewPost(post, character) {
     if (!this.io) return;
 
@@ -52,10 +53,12 @@ class WebSocketService {
       data: {
         id: post.id,
         userId: post.userId,
+        user_id: post.user_id,
+        user_type: post.user_type,
         content: post.content,
         imageUrl: post.imageUrl,
         likes: post.likes,
-        timestamp: 'just now',
+        timestamp: post.timestamp || post.created_at, // Use actual DB timestamp
         character: {
           id: character.id,
           username: character.username,
@@ -71,6 +74,32 @@ class WebSocketService {
     console.log(`[WEBSOCKET] 📡 Broadcasted new post by ${character.name} to ${this.connectedClients.size} clients`);
   }
 
+  // Broadcast new comment to all connected clients
+  broadcastNewComment(comment, character, postId) {
+    if (!this.io) return;
+
+    const payload = {
+      type: 'NEW_COMMENT',
+      data: {
+        id: comment.id,
+        postId: comment.postId,
+        userId: comment.userId,
+        content: comment.content,
+        timestamp: comment.timestamp || comment.created_at, // Use actual DB timestamp
+        character: {
+          id: character.id,
+          username: character.username,
+          name: character.name,
+          avatar: character.avatar
+        }
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    this.io.emit('newComment', payload);
+    console.log(`[WEBSOCKET] 📡 Broadcasted new comment by ${character.name} to ${this.connectedClients.size} clients`);
+  }
+  
   // Broadcast new comment to all connected clients
   broadcastNewComment(comment, character, postId) {
     if (!this.io) return;

@@ -48,7 +48,7 @@ const createComment = async (req, res) => {
       postId: dbComment.postId,
       content: dbComment.content,
       commenterId: dbComment.userId,
-      timestamp: 'just now'
+      timestamp: dbComment.timestamp || dbComment.created_at // Use actual DB timestamp
     });
 
   } catch (error) {
@@ -67,7 +67,7 @@ const getComments = (req, res) => {
       postId: comment.postId,
       userId: comment.userId,
       content: comment.content,
-      timestamp: 'some time ago' // You can format this like posts if needed
+      timestamp: comment.timestamp || comment.created_at // Use actual DB timestamp
     }));
     
     res.json(formattedComments);

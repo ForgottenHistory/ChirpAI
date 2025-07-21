@@ -11,8 +11,8 @@ const initializeTables = (db) => {
       topics TEXT,
       followers_count INTEGER DEFAULT 0,
       following_count INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT (datetime('now')),
+      updated_at DATETIME DEFAULT (datetime('now'))
     )
   `);
 
@@ -26,8 +26,8 @@ const initializeTables = (db) => {
       content TEXT NOT NULL,
       imageUrl TEXT,
       likes INTEGER DEFAULT 0,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      timestamp DATETIME DEFAULT (datetime('now')),
+      created_at DATETIME DEFAULT (datetime('now')),
       FOREIGN KEY (userId) REFERENCES characters (id)
     )
   `);
@@ -63,8 +63,8 @@ const initializeTables = (db) => {
       user_id_new INTEGER,
       user_type TEXT DEFAULT 'character',
       content TEXT NOT NULL,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      timestamp DATETIME DEFAULT (datetime('now')),
+      created_at DATETIME DEFAULT (datetime('now')),
       FOREIGN KEY (postId) REFERENCES posts (id),
       FOREIGN KEY (userId) REFERENCES characters (id)
     )
@@ -77,7 +77,7 @@ const initializeTables = (db) => {
       postId INTEGER NOT NULL,
       userId INTEGER DEFAULT 0,
       user_type TEXT DEFAULT 'user',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT (datetime('now')),
       FOREIGN KEY (postId) REFERENCES posts (id)
     )
   `);
@@ -88,7 +88,7 @@ const initializeTables = (db) => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       follower_id INTEGER NOT NULL,
       following_id INTEGER NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT (datetime('now')),
       UNIQUE(follower_id, following_id),
       FOREIGN KEY (follower_id) REFERENCES characters (id),
       FOREIGN KEY (following_id) REFERENCES characters (id)
@@ -105,8 +105,8 @@ const initializeTables = (db) => {
       bio TEXT,
       followers_count INTEGER DEFAULT 0,
       following_count INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT (datetime('now')),
+      updated_at DATETIME DEFAULT (datetime('now'))
     )
   `);
 
@@ -116,8 +116,8 @@ const initializeTables = (db) => {
       id INTEGER PRIMARY KEY,
       current_user_id INTEGER,
       is_admin_mode BOOLEAN DEFAULT FALSE,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT (datetime('now')),
+      updated_at DATETIME DEFAULT (datetime('now'))
     )
   `);
 

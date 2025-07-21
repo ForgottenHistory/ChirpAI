@@ -42,7 +42,7 @@ router.post('/create-user-post', async (req, res) => {
       userId: 0, // Set to 0 for user posts to avoid confusion with character IDs
       user_id: currentUser.id,
       user_type: 'user',
-      timestamp: dbPost.timestamp || dbPost.created_at // Use raw DB timestamp
+      timestamp: dbPost.timestamp || dbPost.created_at // Use actual DB timestamp
     });
   } catch (error) {
     console.error('Error creating user post:', error);

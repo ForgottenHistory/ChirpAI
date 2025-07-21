@@ -1,12 +1,14 @@
 const db = require('../database/db');
 
 const createComment = (postId, userId, content) => {
+  const now = new Date().toISOString();
+  
   const stmt = db.prepare(`
-    INSERT INTO comments (postId, userId, content)
-    VALUES (?, ?, ?)
+    INSERT INTO comments (postId, userId, content, timestamp, created_at)
+    VALUES (?, ?, ?, ?, ?)
   `);
   
-  const result = stmt.run(postId, userId, content);
+  const result = stmt.run(postId, userId, content, now, now);
   
   // Get the created comment
   const getComment = db.prepare('SELECT * FROM comments WHERE id = ?');

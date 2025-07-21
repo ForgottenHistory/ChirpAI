@@ -25,7 +25,7 @@ const createPost = async (req, res) => {
       id: dbPost.id,
       content: dbPost.content,
       characterId: dbPost.userId,
-      timestamp: 'just now',
+      timestamp: dbPost.timestamp || dbPost.created_at, // Use actual DB timestamp
       likes: dbPost.likes,
       imageUrl: dbPost.imageUrl
     });
@@ -92,21 +92,6 @@ const createImage = async (req, res) => {
     console.error(`[${new Date().toISOString()}] Error generating image:`, error);
     res.status(500).json({ error: 'Failed to generate image. Make sure Automatic1111 is running with --api flag on port 7860' });
   }
-};
-
-// Helper function to format timestamps
-const formatTimestamp = (timestamp) => {
-  const now = new Date();
-  const postTime = new Date(timestamp);
-  const diffMs = now - postTime;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${diffDays}d ago`;
 };
 
 module.exports = {

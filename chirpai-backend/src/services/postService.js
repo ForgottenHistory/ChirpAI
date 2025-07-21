@@ -1,14 +1,16 @@
 const db = require('../database/db');
 
 const createPost = (userId, content, imageUrl = null, userType = 'character') => {
+  const now = new Date().toISOString();
+  
   if (userType === 'user') {
     // For user posts, set userId to 0 (indicating not a character) and use user_id for actual user ID
     const stmt = db.prepare(`
       INSERT INTO posts (userId, user_id, content, imageUrl, likes, user_type, timestamp, created_at)
-      VALUES (0, ?, ?, ?, 0, 'user', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES (0, ?, ?, ?, 0, 'user', ?, ?)
     `);
     
-    const result = stmt.run(userId, content, imageUrl);
+    const result = stmt.run(userId, content, imageUrl, now, now);
     
     // Get the created post
     const getPost = db.prepare('SELECT * FROM posts WHERE id = ?');
@@ -17,10 +19,10 @@ const createPost = (userId, content, imageUrl = null, userType = 'character') =>
     // Original character post logic - also ensure timestamp is set
     const stmt = db.prepare(`
       INSERT INTO posts (userId, content, imageUrl, likes, user_type, timestamp, created_at)
-      VALUES (?, ?, ?, 0, 'character', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, 0, 'character', ?, ?)
     `);
     
-    const result = stmt.run(userId, content, imageUrl);
+    const result = stmt.run(userId, content, imageUrl, now, now);
     
     // Get the created post
     const getPost = db.prepare('SELECT * FROM posts WHERE id = ?');
