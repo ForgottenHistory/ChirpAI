@@ -78,23 +78,34 @@ const UserSelector = () => {
               <div 
                 key={user.id}
                 className={`user-option ${currentUser.id === user.id ? 'active' : ''}`}
-                onClick={() => handleSwitchUser(user.id)}
               >
-                <img 
-                  src={user.avatar || '/avatars/avatar1.png'} 
-                  alt={user.display_name} 
-                  className="option-avatar"
-                  onError={(e) => {
-                    e.target.src = '/avatars/avatar1.png';
-                  }}
-                />
-                <div className="option-info">
-                  <div className="option-name">{user.display_name}</div>
-                  <div className="option-username">@{user.username}</div>
-                  <div className="option-stats">
-                    {formatCount(user.followers_count)} followers
+                <div 
+                  className="user-option-content"
+                  onClick={() => handleSwitchUser(user.id)}
+                >
+                  <img 
+                    src={user.avatar || '/avatars/avatar1.png'} 
+                    alt={user.display_name} 
+                    className="option-avatar"
+                    onError={(e) => {
+                      e.target.src = '/avatars/avatar1.png';
+                    }}
+                  />
+                  <div className="option-info">
+                    <div className="option-name">{user.display_name}</div>
+                    <div className="option-username">@{user.username}</div>
+                    <div className="option-stats">
+                      {formatCount(user.followers_count)} followers
+                    </div>
                   </div>
                 </div>
+                <a 
+                  href={`/profile/${user.id}`} 
+                  className="view-profile-btn"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  👤
+                </a>
               </div>
             ))}
           </div>

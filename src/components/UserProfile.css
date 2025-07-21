@@ -617,3 +617,36 @@
     max-height: 150px;
   }
 }
+
+.profile-avatar {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #e1e1e1;
+  background: #f0f0f0; /* Fallback background */
+}
+
+.profile-avatar {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #e1e1e1;
+  background: #f0f0f0; /* Fallback background */
+}
+
+.profile-avatar-container {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile avatar adjustments */
+@media (max-width: 768px) {
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+  }
+}

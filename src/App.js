@@ -10,6 +10,7 @@ import Header from './components/Header';
 import Feed from './components/Feed';
 import UserProfile from './components/UserProfile';
 import UserCreation from './components/UserCreation';
+import UserProfilePage from './components/UserProfilePage';
 
 // Main App Content Component (everything except Router and UserProvider)
 function AppContent() {
@@ -38,25 +39,25 @@ function AppContent() {
           api.getCharacters(),
           api.getPosts()
         ]);
-        
+
         setCharacters(charactersResponse.data);
         setPosts(postsResponse.data);
-        
+
         // Load comments for all posts
-        const commentsPromises = postsResponse.data.map(post => 
+        const commentsPromises = postsResponse.data.map(post =>
           api.getComments(post.id).then(response => ({
             postId: post.id,
             comments: response.data
           }))
         );
-        
+
         const commentsResults = await Promise.all(commentsPromises);
         const commentsMap = {};
         commentsResults.forEach(({ postId, comments }) => {
           commentsMap[postId] = comments;
         });
         setComments(commentsMap);
-        
+
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -75,7 +76,7 @@ function AppContent() {
       console.log('[WebSocket] New post received:', payload);
       const newPost = payload.data;
       addPost(newPost);
-      
+
       // Show notification (optional)
       if (Notification.permission === 'granted') {
         new Notification(`New post by ${newPost.character.name}`, {
@@ -94,9 +95,9 @@ function AppContent() {
     const handleLikeUpdate = (payload) => {
       console.log('[WebSocket] Like update received:', payload);
       // Update post likes without affecting user's like state
-      setPosts(prevPosts => 
-        prevPosts.map(post => 
-          post.id === payload.data.postId 
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === payload.data.postId
             ? { ...post, likes: payload.data.likes }
             : post
         )
@@ -148,7 +149,7 @@ function AppContent() {
 
   const handleGeneratePost = async (includeImage = false) => {
     if (generating) return;
-    
+
     setGenerating(true);
     try {
       const randomCharacterId = Math.floor(Math.random() * 3) + 1;
@@ -174,23 +175,23 @@ function AppContent() {
 
   const handleGenerateAvatars = async () => {
     if (generatingAvatars) return;
-    
+
     setGeneratingAvatars(true);
     try {
       console.log('Generating avatars for all characters...');
-      
+
       for (let i = 1; i <= 3; i++) {
         try {
           const response = await api.generateAvatar(i);
-          
-          setCharacters(prevCharacters => 
-            prevCharacters.map(char => 
-              char.id === i 
+
+          setCharacters(prevCharacters =>
+            prevCharacters.map(char =>
+              char.id === i
                 ? { ...char, avatar: response.data.avatarUrl }
                 : char
             )
           );
-          
+
           console.log(`Generated avatar for character ${i}`);
         } catch (error) {
           console.error(`Failed to generate avatar for character ${i}:`, error);
@@ -206,15 +207,15 @@ function AppContent() {
 
   const handleGenerateComment = async (postId) => {
     if (generatingComment) return;
-    
+
     setGeneratingComment(postId);
     try {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
-      
+
       const availableCharacters = characters.filter(char => char.id !== post.userId);
       const randomCommenter = availableCharacters[Math.floor(Math.random() * availableCharacters.length)];
-      
+
       const response = await api.generateComment(
         post.content,
         randomCommenter.id,
@@ -259,14 +260,14 @@ function AppContent() {
 
   return (
     <div className="app">
-      <Header 
+      <Header
         onGeneratePost={handleGeneratePost}
         onGenerateAvatars={handleGenerateAvatars}
         generating={generating}
         generatingAvatars={generatingAvatars}
         isConnected={isConnected}
       />
-      
+
       <main className="main-content">
         <Routes>
           <Route path="/" element={
@@ -281,6 +282,7 @@ function AppContent() {
             />
           } />
           <Route path="/user/:userId" element={<UserProfile />} />
+          <Route path="/profile/:userId" element={<UserProfilePage />} />
         </Routes>
       </main>
     </div>
