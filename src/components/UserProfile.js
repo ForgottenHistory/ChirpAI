@@ -16,6 +16,7 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState('photos');
   const [generatingComment, setGeneratingComment] = useState(null);
   const [expandedComments, setExpandedComments] = useState(new Set());
+  const [selectedPost, setSelectedPost] = useState(null); // For photo modal
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -148,6 +149,16 @@ const UserProfile = () => {
     setExpandedComments(newExpanded);
   };
 
+  const openPhotoModal = (post) => {
+    setSelectedPost(post);
+    // Ensure comments are expanded in modal
+    setExpandedComments(prev => new Set([...prev, post.id]));
+  };
+
+  const closePhotoModal = () => {
+    setSelectedPost(null);
+  };
+
   const getCharacterById = (userId) => {
     return characters.find(char => char.id === userId);
   };
@@ -155,6 +166,27 @@ const UserProfile = () => {
   const getCommentsForPost = (postId) => {
     return comments[postId] || [];
   };
+
+  // Handle modal background click
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        closePhotoModal();
+      }
+    };
+
+    if (selectedPost) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedPost]);
 
   if (loading) {
     return (
@@ -260,7 +292,11 @@ const UserProfile = () => {
             </div>
           ) : (
             postsWithImages.map((post) => (
-              <div key={post.id} className="grid-post">
+              <div 
+                key={post.id} 
+                className="grid-post"
+                onClick={() => openPhotoModal(post)}
+              >
                 <img 
                   src={post.imageUrl} 
                   alt="Post" 
@@ -342,6 +378,65 @@ const UserProfile = () => {
               );
             })
           )}
+        </div>
+      )}
+
+      {/* Photo Modal */}
+      {selectedPost && (
+        <div className="photo-modal" onClick={closePhotoModal}>
+          <div className="photo-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="photo-modal-close" onClick={closePhotoModal}>
+              ✕
+            </button>
+            
+            <div className="photo-modal-left">
+              <img 
+                src={selectedPost.imageUrl} 
+                alt="Post" 
+                className="photo-modal-image"
+              />
+            </div>
+            
+            <div className="photo-modal-right">
+              <div className="photo-modal-header">
+                <Link to={`/user/${character.id}`} className="modal-user-link">
+                  <img src={character.avatar} alt={character.name} className="modal-avatar" />
+                  <span className="modal-username">@{character.username}</span>
+                </Link>
+                <span className="modal-timestamp">{selectedPost.timestamp}</span>
+              </div>
+              
+              <div className="photo-modal-content-text">
+                <p>{selectedPost.content}</p>
+              </div>
+              
+              <div className="photo-modal-actions">
+                <button 
+                  className={`like-btn ${likedPosts.has(selectedPost.id) ? 'liked' : ''}`}
+                  onClick={() => handleToggleLike(selectedPost.id)}
+                >
+                  {likedPosts.has(selectedPost.id) ? '❤️' : '🤍'} {selectedPost.likes}
+                </button>
+                <button 
+                  onClick={() => handleGenerateComment(selectedPost.id)}
+                  disabled={generatingComment === selectedPost.id}
+                >
+                  {generatingComment === selectedPost.id ? '💭 Generating...' : '💬 Comment'}
+                </button>
+              </div>
+
+              {/* Comments in modal */}
+              <div className="photo-modal-comments">
+                {getCommentsForPost(selectedPost.id).map(comment => (
+                  <Comment 
+                    key={comment.id} 
+                    comment={comment} 
+                    character={getCharacterById(comment.userId)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
