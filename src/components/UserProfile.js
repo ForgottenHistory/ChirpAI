@@ -1,157 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api } from '../services/api';
-import Comment from './Comment';
+import { useProfileData } from '../hooks/useProfileData';
+import { useProfileInteractions } from '../hooks/useProfileInteractions';
+import ProfileHeader from './ProfileHeader';
+import ProfileTabs from './ProfileTabs';
+import PhotoGrid from './PhotoGrid';
+import TextPostList from './TextPostList';
+import PhotoModal from './PhotoModal';
 import './UserProfile.css';
 
 const UserProfile = () => {
   const { userId } = useParams();
-  const [character, setCharacter] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [characters, setCharacters] = useState([]);
-  const [comments, setComments] = useState({});
-  const [likedPosts, setLikedPosts] = useState(new Set());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('photos');
-  const [generatingComment, setGeneratingComment] = useState(null);
-  const [expandedComments, setExpandedComments] = useState(new Set());
-  const [selectedPost, setSelectedPost] = useState(null); // For photo modal
+  const [selectedPost, setSelectedPost] = useState(null);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch all characters
-        const charactersResponse = await api.getCharacters();
-        setCharacters(charactersResponse.data);
-        
-        // Find the specific character
-        const foundCharacter = charactersResponse.data.find(char => char.id === parseInt(userId));
-        
-        if (!foundCharacter) {
-          setError('User not found');
-          return;
-        }
-        
-        setCharacter(foundCharacter);
-        
-        // Fetch all posts and filter by user
-        const postsResponse = await api.getPosts();
-        const userPosts = postsResponse.data.filter(post => post.userId === parseInt(userId));
-        
-        setPosts(userPosts);
-        
-        // Load comments for all user posts
-        const commentsPromises = userPosts.map(post => 
-          api.getComments(post.id).then(response => ({
-            postId: post.id,
-            comments: response.data
-          }))
-        );
-        
-        const commentsResults = await Promise.all(commentsPromises);
-        const commentsMap = {};
-        commentsResults.forEach(({ postId, comments }) => {
-          commentsMap[postId] = comments;
-        });
-        setComments(commentsMap);
-        
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-        setError('Failed to load user profile');
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Custom hooks for data and interactions
+  const {
+    character,
+    posts,
+    characters,
+    loading,
+    error,
+    setPosts,
+    addComment,
+    getCharacterById,
+    getCommentsForPost
+  } = useProfileData(userId);
 
-    fetchUserData();
-  }, [userId]);
+  const {
+    likedPosts,
+    generatingComment,
+    expandedComments,
+    handleToggleLike,
+    handleGenerateComment,
+    toggleComments,
+    setExpandedComments
+  } = useProfileInteractions(posts, setPosts, addComment, characters);
 
-  const handleToggleLike = async (postId) => {
-    try {
-      await api.toggleLike(postId);
-      
-      // Update local like state
-      const newLikedPosts = new Set(likedPosts);
-      const isLiked = likedPosts.has(postId);
-      
-      if (isLiked) {
-        newLikedPosts.delete(postId);
-      } else {
-        newLikedPosts.add(postId);
-      }
-      
-      setLikedPosts(newLikedPosts);
-      
-      // Update post likes count
-      setPosts(posts.map(post => 
-        post.id === postId 
-          ? { ...post, likes: post.likes + (isLiked ? -1 : 1) }
-          : post
-      ));
-    } catch (error) {
-      console.error('Error toggling like:', error);
-    }
-  };
-
-  const handleGenerateComment = async (postId) => {
-    if (generatingComment) return;
-    
-    setGeneratingComment(postId);
-    try {
-      const post = posts.find(p => p.id === postId);
-      if (!post) return;
-      
-      const availableCharacters = characters.filter(char => char.id !== post.userId);
-      const randomCommenter = availableCharacters[Math.floor(Math.random() * availableCharacters.length)];
-      
-      const response = await api.generateComment(
-        post.content,
-        randomCommenter.id,
-        post.userId,
-        postId
-      );
-
-      const newComment = {
-        id: response.data.id,
-        postId: response.data.postId,
-        userId: response.data.commenterId,
-        content: response.data.content,
-        timestamp: response.data.timestamp
-      };
-
-      // Add comment to local state
-      setComments(prevComments => ({
-        ...prevComments,
-        [postId]: [...(prevComments[postId] || []), newComment]
-      }));
-
-      // Auto-expand comments when a new one is generated
-      setExpandedComments(prev => new Set([...prev, postId]));
-      
-    } catch (error) {
-      console.error('Error generating comment:', error);
-      alert('Failed to generate comment. Please try again.');
-    } finally {
-      setGeneratingComment(null);
-    }
-  };
-
-  const toggleComments = (postId) => {
-    const newExpanded = new Set(expandedComments);
-    if (expandedComments.has(postId)) {
-      newExpanded.delete(postId);
-    } else {
-      newExpanded.add(postId);
-    }
-    setExpandedComments(newExpanded);
-  };
-
+  // Modal management
   const openPhotoModal = (post) => {
     setSelectedPost(post);
-    // Ensure comments are expanded in modal
     setExpandedComments(prev => new Set([...prev, post.id]));
   };
 
@@ -159,15 +47,7 @@ const UserProfile = () => {
     setSelectedPost(null);
   };
 
-  const getCharacterById = (userId) => {
-    return characters.find(char => char.id === userId);
-  };
-
-  const getCommentsForPost = (postId) => {
-    return comments[postId] || [];
-  };
-
-  // Handle modal background click
+  // Handle modal keyboard events
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -188,6 +68,7 @@ const UserProfile = () => {
     };
   }, [selectedPost]);
 
+  // Loading and error states
   if (loading) {
     return (
       <div className="user-profile">
@@ -212,233 +93,68 @@ const UserProfile = () => {
     );
   }
 
+  // Filter posts by type
   const postsWithImages = posts.filter(post => post.imageUrl);
   const postsTextOnly = posts.filter(post => !post.imageUrl);
   const totalPosts = posts.length;
 
-  const currentPosts = activeTab === 'photos' ? postsWithImages : postsTextOnly;
-
   return (
     <div className="user-profile">
-      {/* Back to feed button */}
+      {/* Navigation */}
       <div className="profile-navigation">
         <Link to="/" className="back-to-feed">
           ← Back to Feed
         </Link>
       </div>
 
-      <div className="profile-header">
-        <div className="profile-avatar-container">
-          <img 
-            src={character.avatar} 
-            alt={character.name} 
-            className="profile-avatar"
-          />
-        </div>
-        
-        <div className="profile-info">
-          <div className="profile-username">
-            <h1>@{character.username}</h1>
-            <button className="follow-btn">Follow</button>
-          </div>
-          
-          <div className="profile-stats">
-            <div className="stat">
-              <span className="stat-number">{totalPosts}</span>
-              <span className="stat-label">posts</span>
-            </div>
-            <div className="stat">
-              <span className="stat-number">1.2k</span>
-              <span className="stat-label">followers</span>
-            </div>
-            <div className="stat">
-              <span className="stat-number">543</span>
-              <span className="stat-label">following</span>
-            </div>
-          </div>
-          
-          <div className="profile-details">
-            <h2 className="profile-name">{character.name}</h2>
-            <p className="profile-bio">{character.bio}</p>
-          </div>
-        </div>
-      </div>
+      {/* Profile Header */}
+      <ProfileHeader 
+        character={character} 
+        totalPosts={totalPosts} 
+      />
 
-      <div className="profile-tabs">
-        <div 
-          className={`tab ${activeTab === 'photos' ? 'active' : ''}`}
-          onClick={() => setActiveTab('photos')}
-        >
-          <span>📷 PHOTOS</span>
-        </div>
-        <div 
-          className={`tab ${activeTab === 'text' ? 'active' : ''}`}
-          onClick={() => setActiveTab('text')}
-        >
-          <span>📝 TEXT</span>
-        </div>
-        <div className="tab">
-          <span>🏷️ TAGGED</span>
-        </div>
-      </div>
+      {/* Profile Tabs */}
+      <ProfileTabs 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+      />
 
+      {/* Content based on active tab */}
       {activeTab === 'photos' ? (
-        <div className="posts-grid">
-          {postsWithImages.length === 0 ? (
-            <div className="no-posts">
-              <div className="no-posts-icon">📷</div>
-              <h3>No Photos Yet</h3>
-              <p>When {character.name} shares photos, they'll appear here.</p>
-            </div>
-          ) : (
-            postsWithImages.map((post) => (
-              <div 
-                key={post.id} 
-                className="grid-post"
-                onClick={() => openPhotoModal(post)}
-              >
-                <img 
-                  src={post.imageUrl} 
-                  alt="Post" 
-                  className="grid-post-image"
-                />
-                <div className="grid-post-overlay">
-                  <div className="overlay-stats">
-                    <span className="overlay-stat">
-                      ❤️ {post.likes}
-                    </span>
-                    <span className="overlay-stat">
-                      💬 {getCommentsForPost(post.id).length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <PhotoGrid
+          posts={postsWithImages}
+          character={character}
+          onPhotoClick={openPhotoModal}
+          getCommentsForPost={getCommentsForPost}
+        />
       ) : (
-        <div className="text-posts">
-          {postsTextOnly.length === 0 ? (
-            <div className="no-posts">
-              <div className="no-posts-icon">📝</div>
-              <h3>No Text Posts Yet</h3>
-              <p>When {character.name} shares text posts, they'll appear here.</p>
-            </div>
-          ) : (
-            postsTextOnly.map((post) => {
-              const postComments = getCommentsForPost(post.id);
-              const isCommentsExpanded = expandedComments.has(post.id);
-              
-              return (
-                <div key={post.id} className="text-post">
-                  <div className="text-post-content">
-                    <p>{post.content}</p>
-                  </div>
-                  
-                  <div className="text-post-actions">
-                    <button 
-                      className={`like-btn ${likedPosts.has(post.id) ? 'liked' : ''}`}
-                      onClick={() => handleToggleLike(post.id)}
-                    >
-                      {likedPosts.has(post.id) ? '❤️' : '🤍'} {post.likes}
-                    </button>
-                    <button 
-                      onClick={() => handleGenerateComment(post.id)}
-                      disabled={generatingComment === post.id}
-                    >
-                      {generatingComment === post.id ? '💭 Generating...' : '💬 Comment'}
-                    </button>
-                    {postComments.length > 0 && (
-                      <button 
-                        className="toggle-comments-btn"
-                        onClick={() => toggleComments(post.id)}
-                      >
-                        {isCommentsExpanded ? '🔽' : '▶️'} {postComments.length} comment{postComments.length !== 1 ? 's' : ''}
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="text-post-footer">
-                    <span className="text-post-timestamp">{post.timestamp}</span>
-                  </div>
-
-                  {/* Comments section */}
-                  {postComments.length > 0 && isCommentsExpanded && (
-                    <div className="comments-section">
-                      {postComments.map(comment => (
-                        <Comment 
-                          key={comment.id} 
-                          comment={comment} 
-                          character={getCharacterById(comment.userId)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
+        <TextPostList
+          posts={postsTextOnly}
+          character={character}
+          likedPosts={likedPosts}
+          expandedComments={expandedComments}
+          generatingComment={generatingComment}
+          onLike={handleToggleLike}
+          onComment={handleGenerateComment}
+          onToggleComments={toggleComments}
+          getCharacterById={getCharacterById}
+          getCommentsForPost={getCommentsForPost}
+        />
       )}
 
       {/* Photo Modal */}
-      {selectedPost && (
-        <div className="photo-modal" onClick={closePhotoModal}>
-          <div className="photo-modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="photo-modal-close" onClick={closePhotoModal}>
-              ✕
-            </button>
-            
-            <div className="photo-modal-left">
-              <img 
-                src={selectedPost.imageUrl} 
-                alt="Post" 
-                className="photo-modal-image"
-              />
-            </div>
-            
-            <div className="photo-modal-right">
-              <div className="photo-modal-header">
-                <Link to={`/user/${character.id}`} className="modal-user-link">
-                  <img src={character.avatar} alt={character.name} className="modal-avatar" />
-                  <span className="modal-username">@{character.username}</span>
-                </Link>
-                <span className="modal-timestamp">{selectedPost.timestamp}</span>
-              </div>
-              
-              <div className="photo-modal-content-text">
-                <p>{selectedPost.content}</p>
-              </div>
-              
-              <div className="photo-modal-actions">
-                <button 
-                  className={`like-btn ${likedPosts.has(selectedPost.id) ? 'liked' : ''}`}
-                  onClick={() => handleToggleLike(selectedPost.id)}
-                >
-                  {likedPosts.has(selectedPost.id) ? '❤️' : '🤍'} {selectedPost.likes}
-                </button>
-                <button 
-                  onClick={() => handleGenerateComment(selectedPost.id)}
-                  disabled={generatingComment === selectedPost.id}
-                >
-                  {generatingComment === selectedPost.id ? '💭 Generating...' : '💬 Comment'}
-                </button>
-              </div>
-
-              {/* Comments in modal */}
-              <div className="photo-modal-comments">
-                {getCommentsForPost(selectedPost.id).map(comment => (
-                  <Comment 
-                    key={comment.id} 
-                    comment={comment} 
-                    character={getCharacterById(comment.userId)}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <PhotoModal
+        post={selectedPost}
+        character={character}
+        isVisible={!!selectedPost}
+        likedPosts={likedPosts}
+        generatingComment={generatingComment}
+        onClose={closePhotoModal}
+        onLike={handleToggleLike}
+        onComment={handleGenerateComment}
+        getCharacterById={getCharacterById}
+        getCommentsForPost={getCommentsForPost}
+      />
     </div>
   );
 };
