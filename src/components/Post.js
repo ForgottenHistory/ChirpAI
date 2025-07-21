@@ -7,12 +7,16 @@ const Post = ({
   character, 
   isLiked, 
   comments, 
+  isCommentsExpanded,
   onLike, 
   onComment, 
+  onToggleComments,
   generatingComment,
   getCharacterById 
 }) => {
   if (!character) return null;
+
+  const hasComments = comments.length > 0;
 
   return (
     <div className="post">
@@ -52,9 +56,17 @@ const Post = ({
         >
           {generatingComment === post.id ? '💭 Generating...' : '💬 Comment'}
         </button>
+        {hasComments && (
+          <button 
+            className="toggle-comments-btn"
+            onClick={() => onToggleComments(post.id)}
+          >
+            {isCommentsExpanded ? '🔽' : '▶️'} {comments.length} comment{comments.length !== 1 ? 's' : ''}
+          </button>
+        )}
       </div>
       
-      {comments.length > 0 && (
+      {hasComments && isCommentsExpanded && (
         <div className="comments-section">
           {comments.map(comment => (
             <Comment 
