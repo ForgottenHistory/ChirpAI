@@ -13,15 +13,18 @@ export const useUserProfileData = (userId) => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
+        setError(null);
         
-        // Fetch all characters first
-        const charactersResponse = await api.getCharacters();
+        // Fetch all data in parallel for speed
+        const [charactersResponse, userResponse, postsResponse] = await Promise.all([
+          api.getCharacters(),
+          api.getUser(userId),
+          api.getPosts()
+        ]);
+        
         setCharacters(charactersResponse.data);
         
-        // Fetch the specific user
-        const userResponse = await api.getUser(userId);
         const foundUser = userResponse.data;
-        
         if (!foundUser) {
           setError('User not found');
           return;
@@ -36,16 +39,7 @@ export const useUserProfileData = (userId) => {
         
         setUser(foundUser);
         
-        // Fetch all posts - filter for user posts
-        const postsResponse = await api.getPosts();
-        console.log(`[PROFILE] All posts from API:`, postsResponse.data.map(p => ({
-          id: p.id,
-          user_type: p.user_type,
-          user_id: p.user_id,
-          userId: p.userId,
-          content: p.content.substring(0, 30) + '...'
-        })));
-        
+        // Filter user posts
         const userPosts = postsResponse.data.filter(post => {
           const isUserPost = post.user_type === 'user' && post.user_id === parseInt(userId);
           console.log(`[PROFILE] Checking post ${post.id}: user_type=${post.user_type}, user_id=${post.user_id}, target_userId=${userId}, isMatch=${isUserPost}`);
@@ -53,10 +47,9 @@ export const useUserProfileData = (userId) => {
         });
         
         console.log(`[PROFILE] Found ${userPosts.length} posts for user ${userId}:`, userPosts);
-        
         setPosts(userPosts);
         
-        // Load comments for user posts (if any)
+        // Load comments only if there are posts
         if (userPosts.length > 0) {
           const commentsPromises = userPosts.map(post => 
             api.getComments(post.id).then(response => ({

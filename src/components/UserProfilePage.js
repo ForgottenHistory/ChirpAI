@@ -87,7 +87,15 @@ const UserProfilePage = () => {
   if (loading) {
     return (
       <div className="user-profile">
-        <div className="loading">Loading profile...</div>
+        <div className="profile-navigation">
+          <Link to="/" className="back-to-feed">
+            ← Back to Feed
+          </Link>
+        </div>
+        <div className="profile-loading">
+          <div className="loading-spinner-small"></div>
+          <span>Loading profile...</span>
+        </div>
       </div>
     );
   }
