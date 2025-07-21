@@ -88,7 +88,7 @@ Just return the comment, nothing else.`;
   return chatCompletion.choices[0].message.content.trim();
 };
 
-const generateDirectMessage = async (characterId, userName, userMessage) => {
+const generateDirectMessage = async (characterId, userName, userMessage, conversationHistory = []) => {
   const characterPersonalities = getCharacterPersonalities();
   const character = characterPersonalities[characterId];
   
@@ -98,13 +98,24 @@ const generateDirectMessage = async (characterId, userName, userMessage) => {
 
   console.log(`[DM] Generating response for ${character.name} to ${userName}`);
 
+  // Build conversation context from recent messages
+  let contextText = '';
+  if (conversationHistory.length > 0) {
+    const recentMessages = conversationHistory.slice(-10); // Last 10 messages for context
+    contextText = '\n\nRecent conversation:\n';
+    recentMessages.forEach(msg => {
+      const sender = msg.sender_type === 'user' ? userName : character.name;
+      contextText += `${sender}: ${msg.content}\n`;
+    });
+  }
+
   const prompt = `You are ${character.name}, having a private conversation with ${userName}.
 
 Your personality: ${character.personality}
-
+${contextText}
 ${userName} just sent you this message: "${userMessage}"
 
-Write a personal, friendly response that ${character.name} would send in a direct message. Keep it conversational and natural, like you're chatting with a friend. Don't be overly formal. You can ask questions, share thoughts, or react to what they said. Keep it under 200 characters.
+Write a personal, friendly response that ${character.name} would send in a direct message. Keep it conversational and natural, like you're chatting with a friend. Reference the conversation history if relevant. Don't be overly formal. You can ask questions, share thoughts, or react to what they said. Keep it under 200 characters.
 
 Just return the message response, nothing else.`;
 
@@ -112,9 +123,9 @@ Just return the message response, nothing else.`;
   const requestFunction = async () => {
     return await openai.chat.completions.create({
       model: settings.ai.model,
-      max_tokens: settings.ai.maxTokensComment, // Use comment token limit for DMs
+      max_tokens: settings.ai.maxTokensComment,
       messages: [
-        { role: 'system', content: 'You are a helpful assistant that generates direct messages for AI characters.' },
+        { role: 'system', content: 'You are a helpful assistant that generates direct messages for AI characters. You have access to conversation history to provide contextual responses.' },
         { role: 'user', content: prompt }
       ],
     });

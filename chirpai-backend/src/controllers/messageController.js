@@ -81,6 +81,7 @@ const getMessages = (req, res) => {
 };
 
 // Send a message
+// Send a message
 const sendUserMessage = async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -94,6 +95,9 @@ const sendUserMessage = async (req, res) => {
     if (!content || !content.trim()) {
       return res.status(400).json({ error: 'Message content is required' });
     }
+    
+    // Get conversation history for context
+    const conversationHistory = getConversationMessages(parseInt(conversationId), 20);
     
     // Send user message
     const userMessage = sendMessage(
@@ -110,12 +114,13 @@ const sendUserMessage = async (req, res) => {
     const conversation = getConversation.get(parseInt(conversationId));
     
     if (conversation) {
-      // Generate AI response
+      // Generate AI response with conversation context
       try {
         const aiResponse = await generateDirectMessage(
           conversation.character_id,
           currentUser.display_name,
-          content.trim()
+          content.trim(),
+          conversationHistory
         );
         
         // Send AI response

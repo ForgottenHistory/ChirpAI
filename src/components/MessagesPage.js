@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useUser } from '../contexts/UserContext';
@@ -8,6 +8,7 @@ const MessagesPage = () => {
   const { characterId } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useUser();
+  const messagesEndRef = useRef(null);
   
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -15,6 +16,11 @@ const MessagesPage = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -24,6 +30,10 @@ const MessagesPage = () => {
     
     initializeConversation();
   }, [characterId, currentUser]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const initializeConversation = async () => {
     try {
@@ -51,23 +61,47 @@ const MessagesPage = () => {
     
     if (!newMessage.trim() || sending) return;
     
+    const messageText = newMessage.trim();
+    setNewMessage(''); // Clear input immediately
     setSending(true);
+    
+    // Create a temporary user message to show immediately
+    const tempUserMessage = {
+      id: `temp-${Date.now()}`,
+      conversation_id: conversation.id,
+      sender_type: 'user',
+      sender_id: currentUser.id,
+      content: messageText,
+      created_at: new Date().toISOString()
+    };
+    
+    // Add user message immediately
+    setMessages(prev => [...prev, tempUserMessage]);
+    
     try {
-      const response = await api.sendMessage(conversation.id, newMessage.trim());
+      const response = await api.sendMessage(conversation.id, messageText);
       
-      // Add user message immediately
-      const userMsg = response.data.userMessage;
-      setMessages(prev => [...prev, userMsg]);
+      // Replace temp message with real user message and add AI response
+      setMessages(prev => {
+        // Remove the temp message and add the real messages
+        const withoutTemp = prev.filter(msg => msg.id !== tempUserMessage.id);
+        const newMessages = [...withoutTemp, response.data.userMessage];
+        
+        // Add AI message if it exists
+        if (response.data.aiMessage) {
+          newMessages.push(response.data.aiMessage);
+        }
+        
+        return newMessages;
+      });
       
-      // Add AI message if it exists
-      if (response.data.aiMessage) {
-        setMessages(prev => [...prev, response.data.aiMessage]);
-      }
-      
-      setNewMessage('');
     } catch (err) {
       console.error('Error sending message:', err);
       setError('Failed to send message');
+      
+      // Remove the temp message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempUserMessage.id));
+      setNewMessage(messageText); // Restore the message text
     } finally {
       setSending(false);
     }
@@ -170,6 +204,7 @@ const MessagesPage = () => {
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
         )}
       </div>
