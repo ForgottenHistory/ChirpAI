@@ -37,15 +37,6 @@ const getAllPosts = () => {
   `);
   
   const posts = stmt.all();
-  console.log('Raw posts from database:', posts.map(p => ({
-    id: p.id,
-    userId: p.userId,
-    user_id: p.user_id,
-    user_type: p.user_type,
-    timestamp: p.timestamp,
-    created_at: p.created_at,
-    content: p.content.substring(0, 30) + '...'
-  })));
   
   return posts;
 };
