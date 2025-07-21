@@ -3,8 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useUser } from '../contexts/UserContext';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useMessageSwipe } from '../hooks/useMessageSwipe';
 import TypingIndicator from './TypingIndicator';
 import ConversationInbox from './ConversationInbox';
+import MessageFloatingButtons from './MessageFloatingButtons';
 import './MessagesPage.css';
 
 const MessagesPage = () => {
@@ -23,6 +25,18 @@ const MessagesPage = () => {
   const [error, setError] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showInbox, setShowInbox] = useState(true);
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
+  const [generatingVariation, setGeneratingVariation] = useState(false);
+
+  // Use the swipe hook
+  const {
+    addMessageVariation,
+    swipeToPrevious,
+    swipeToNext,
+    getCurrentContent,
+    getSwipeInfo,
+    clearMessageVariations
+  } = useMessageSwipe();
 
   // Auto-scroll to bottom when messages change or typing status changes
   useEffect(() => {
@@ -74,7 +88,13 @@ const MessagesPage = () => {
           if (exists) {
             return prev;
           }
-          return [...prev, payload.data.message];
+
+          const newMessage = payload.data.message;
+
+          // Store this as the first variation of the message
+          addMessageVariation(newMessage.id, newMessage.content, true);
+
+          return [...prev, newMessage];
         });
         setIsTyping(false); // Ensure typing stops when message arrives
         console.log(`[DM] Received new message via WebSocket`);
@@ -95,7 +115,7 @@ const MessagesPage = () => {
       unsubscribe('typingStop', handleTypingStop);
       unsubscribe('newDirectMessage', handleNewDirectMessage);
     };
-  }, [conversation, subscribe, unsubscribe]);
+  }, [conversation, subscribe, unsubscribe, addMessageVariation]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -116,7 +136,15 @@ const MessagesPage = () => {
 
         // Get messages
         const messagesResponse = await api.getMessages(conversationResponse.data.id);
-        setMessages(messagesResponse.data);
+        const fetchedMessages = messagesResponse.data;
+        setMessages(fetchedMessages);
+
+        // Initialize variations for AI messages
+        fetchedMessages.forEach(message => {
+          if (message.sender_type === 'character') {
+            addMessageVariation(message.id, message.content, true);
+          }
+        });
       }
 
     } catch (err) {
@@ -176,6 +204,103 @@ const MessagesPage = () => {
       minute: '2-digit',
       hour12: true
     });
+  };
+
+  // Handle message selection for floating buttons
+  const handleMessageClick = (messageId, senderType) => {
+    if (senderType === 'character') {
+      setSelectedMessageId(selectedMessageId === messageId ? null : messageId);
+    } else {
+      setSelectedMessageId(null); // Don't allow selecting user messages
+    }
+  };
+
+  // Swipe handlers
+  const handleSwipeLeft = () => {
+    if (selectedMessageId) {
+      swipeToPrevious(selectedMessageId);
+    }
+  };
+
+  const handleSwipeRight = () => {
+    if (selectedMessageId) {
+      swipeToNext(selectedMessageId);
+    }
+  };
+
+  // Generate new variation
+  const handleGenerateVariation = async () => {
+    if (!selectedMessageId || generatingVariation) return;
+
+    setGeneratingVariation(true);
+
+    try {
+      console.log('[VARIATION] Generating test variation for message:', selectedMessageId);
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Generate a simple test variation
+      const testVariations = [
+        "That's an interesting perspective! I'd love to hear more about your thoughts on this.",
+        "I appreciate you sharing that with me. What made you think about this topic?",
+        "That's fascinating! I've been thinking about similar things lately.",
+        "Thanks for bringing this up - it's given me a lot to think about.",
+        "I find your viewpoint really compelling. How did you come to this conclusion?"
+      ];
+
+      const randomVariation = testVariations[Math.floor(Math.random() * testVariations.length)];
+
+      // Add the new variation to our swipe system
+      addMessageVariation(selectedMessageId, randomVariation);
+      console.log('[VARIATION] Added test variation:', randomVariation);
+
+      // Auto-swipe to the new variation
+      setTimeout(() => {
+        const swipeInfo = getSwipeInfo(selectedMessageId);
+        if (swipeInfo.totalVariations > 1) {
+          // Swipe to the last (newest) variation
+          let currentInfo = getSwipeInfo(selectedMessageId);
+          while (currentInfo.currentIndex < currentInfo.totalVariations - 1) {
+            swipeToNext(selectedMessageId);
+            currentInfo = getSwipeInfo(selectedMessageId);
+          }
+        }
+      }, 100);
+
+    } catch (error) {
+      console.error('Error generating variation:', error);
+      alert(`Failed to generate variation: ${error.message}`);
+    } finally {
+      setGeneratingVariation(false);
+    }
+  };
+
+  // Regenerate message (placeholder for now)
+  const handleRegenerate = async () => {
+    if (!selectedMessageId) return;
+
+    // TODO: Implement regenerate
+    console.log('Regenerate message:', selectedMessageId);
+    alert('Regenerate feature coming next!');
+  };
+
+  // Continue message (placeholder for now)
+  const handleContinue = async () => {
+    if (!selectedMessageId) return;
+
+    // TODO: Implement continue
+    console.log('Continue message:', selectedMessageId);
+    alert('Continue feature coming next!');
+  };
+
+  // Get swipe info for selected message
+  const selectedSwipeInfo = selectedMessageId ? getSwipeInfo(selectedMessageId) : {
+    hasVariations: false,
+    currentIndex: 0,
+    totalVariations: 0,
+    canSwipeLeft: false,
+    canSwipeRight: false
   };
 
   if (loading) {
@@ -258,29 +383,37 @@ const MessagesPage = () => {
                 </div>
               ) : (
                 <div className="messages-list">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`message ${message.sender_type === 'user' ? 'message-sent' : 'message-received'}`}
-                    >
-                      {message.sender_type === 'character' && (
-                        <img
-                          src={conversation.character.avatar || '/avatars/avatar1.png'}
-                          alt={conversation.character.name}
-                          className="message-avatar"
-                          onError={(e) => {
-                            e.target.src = '/avatars/avatar1.png';
-                          }}
-                        />
-                      )}
-                      <div className="message-content">
-                        <p>{message.content}</p>
-                        <span className="message-time">
-                          {formatMessageTime(message.created_at)}
-                        </span>
+                  {messages.map((message) => {
+                    const isSelected = selectedMessageId === message.id;
+                    const displayContent = message.sender_type === 'character'
+                      ? getCurrentContent(message.id, message.content)
+                      : message.content;
+
+                    return (
+                      <div
+                        key={message.id}
+                        className={`message ${message.sender_type === 'user' ? 'message-sent' : 'message-received'} ${isSelected ? 'message-selected' : ''}`}
+                        onClick={() => handleMessageClick(message.id, message.sender_type)}
+                      >
+                        {message.sender_type === 'character' && (
+                          <img
+                            src={conversation.character.avatar || '/avatars/avatar1.png'}
+                            alt={conversation.character.name}
+                            className="message-avatar"
+                            onError={(e) => {
+                              e.target.src = '/avatars/avatar1.png';
+                            }}
+                          />
+                        )}
+                        <div className="message-content">
+                          <p>{displayContent}</p>
+                          <span className="message-time">
+                            {formatMessageTime(message.created_at)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {/* Typing Indicator */}
                   <TypingIndicator
@@ -324,6 +457,19 @@ const MessagesPage = () => {
           </div>
         )}
       </div>
+
+      {/* Message Floating Buttons */}
+      <MessageFloatingButtons
+        selectedMessageId={selectedMessageId}
+        swipeInfo={selectedSwipeInfo}
+        onSwipeLeft={handleSwipeLeft}
+        onSwipeRight={handleSwipeRight}
+        onGenerateVariation={handleGenerateVariation}
+        onRegenerate={handleRegenerate}
+        onContinue={handleContinue}
+        isGenerating={isTyping || sending || generatingVariation}
+        generatingVariation={generatingVariation}
+      />
     </div>
   );
 };

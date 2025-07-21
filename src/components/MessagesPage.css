@@ -371,3 +371,55 @@
     transform: translateX(0);
   }
 }
+
+/* Message selection styles */
+.message.message-selected {
+  background: rgba(0, 149, 246, 0.1);
+  border: 2px solid #0095f6;
+  border-radius: 12px;
+  margin: 2px;
+}
+
+.message-received.message-selected {
+  box-shadow: 0 0 0 2px rgba(0, 149, 246, 0.2);
+}
+
+.message-received {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.message-received:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.message-sent {
+  cursor: default;
+}
+
+/* Ensure floating buttons don't overlap with messages */
+@media (min-width: 769px) {
+  .messages-container {
+    padding-right: 80px; /* Make room for floating buttons */
+  }
+}
+
+/* Mobile - move buttons to bottom */
+@media (max-width: 768px) {
+  .message-floating-buttons {
+    position: fixed;
+    bottom: 90px; /* Above the message input */
+    right: 50%;
+    transform: translateX(50%);
+    flex-direction: row;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 8px 12px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .variation-counter {
+    order: -1; /* Put counter first on mobile */
+    margin-right: 8px;
+  }
+}
