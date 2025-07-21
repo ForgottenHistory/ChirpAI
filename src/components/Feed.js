@@ -24,7 +24,7 @@ const Feed = ({
     // Look for user in the users array from context
     const foundUser = users.find(user => user.id === userId);
     if (foundUser) {
-      console.log(`Found user ${userId}:`, foundUser);
+      //console.log(`Found user ${userId}:`, foundUser);
       return {
         id: foundUser.id,
         username: foundUser.username,
@@ -35,7 +35,7 @@ const Feed = ({
     
     // Fallback to current user if it matches
     if (currentUser && currentUser.id === userId) {
-      console.log(`Using current user for ${userId}:`, currentUser);
+      //console.log(`Using current user for ${userId}:`, currentUser);
       return {
         id: currentUser.id,
         username: currentUser.username,
@@ -44,7 +44,7 @@ const Feed = ({
       };
     }
     
-    console.log(`No user found for ID ${userId}. Available users:`, users);
+    //console.log(`No user found for ID ${userId}. Available users:`, users);
     return null;
   };
 
@@ -75,12 +75,7 @@ const Feed = ({
       {currentUser && (
         <CreatePost onPostCreated={onPostCreated} />
       )}
-      
-      {/* Debug: Show posts count */}
-      {console.log(`[FEED] Rendering ${posts.length} posts for user ${currentUser?.username}:`, 
-        posts.map(p => ({ id: p.id, user_type: p.user_type, user_id: p.user_id, userId: p.userId }))
-      )}
-      
+            
       {posts.map(post => {
         // First check user_type to determine post type
         const isUserPost = post.user_type === 'user';
@@ -90,12 +85,10 @@ const Feed = ({
           // For user posts, use user_id field
           const userId = post.user_id;
           author = getUserById(userId);
-          console.log(`Processing user post ${post.id} for user ${userId}:`, author);
         } else {
           // For character posts, use userId field (should be > 0 for characters)
           const characterId = post.userId;
           author = getCharacterById(characterId);
-          console.log(`Processing character post ${post.id} for character ${characterId}:`, author);
         }
         
         if (!author) {

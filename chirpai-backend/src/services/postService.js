@@ -36,6 +36,7 @@ const getAllPosts = () => {
   `);
   
   const posts = stmt.all();
+  /**
   console.log('Raw posts from database:', posts.map(p => ({
     id: p.id,
     userId: p.userId,
@@ -43,7 +44,7 @@ const getAllPosts = () => {
     user_type: p.user_type,
     content: p.content.substring(0, 30) + '...'
   })));
-  
+   */
   return posts;
 };
 

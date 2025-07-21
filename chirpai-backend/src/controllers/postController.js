@@ -39,7 +39,8 @@ const createPost = async (req, res) => {
 const getPosts = (req, res) => {
   try {
     const posts = getAllPosts();
-
+    
+    /**
     console.log('[POST_CONTROLLER] Raw posts from service:', posts.map(p => ({
       id: p.id,
       userId: p.userId,
@@ -47,7 +48,8 @@ const getPosts = (req, res) => {
       user_type: p.user_type,
       content: p.content.substring(0, 30) + '...'
     })));
-
+    */
+   
     // Format timestamps
     const formattedPosts = posts.map(post => ({
       id: post.id,
@@ -60,6 +62,7 @@ const getPosts = (req, res) => {
       timestamp: formatTimestamp(post.created_at)
     }));
 
+    /**
     console.log('[POST_CONTROLLER] Formatted posts being sent to frontend:', formattedPosts.map(p => ({
       id: p.id,
       userId: p.userId,
@@ -67,6 +70,7 @@ const getPosts = (req, res) => {
       user_type: p.user_type,
       content: p.content.substring(0, 30) + '...'
     })));
+    */
 
     res.json(formattedPosts);
   } catch (error) {
