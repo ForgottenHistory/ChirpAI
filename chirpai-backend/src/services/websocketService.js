@@ -143,6 +143,27 @@ class WebSocketService {
     this.io.emit(event, data);
     console.log(`[WEBSOCKET] 📡 Broadcasted ${event} to ${this.connectedClients.size} clients`);
   }
+
+  // Broadcast follower count updates
+  broadcastFollowerUpdates(updates) {
+    if (!this.io) return;
+
+    const payload = {
+      type: 'FOLLOWER_UPDATES',
+      data: updates.map(update => ({
+        characterId: update.characterId,
+        username: update.username,
+        followers: update.newFollowers,
+        following: update.newFollowing,
+        followerChange: update.followerChange,
+        followingChange: update.followingChange
+      })),
+      timestamp: new Date().toISOString()
+    };
+
+    this.io.emit('followerUpdates', payload);
+    console.log(`[WEBSOCKET] 📡 Broadcasted follower updates for ${updates.length} characters to ${this.connectedClients.size} clients`);
+  }
 }
 
 // Create singleton instance

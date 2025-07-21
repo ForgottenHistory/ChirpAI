@@ -9,6 +9,8 @@ class Character {
     this.bio = data.bio;
     this.personality = data.personality;
     this.topics = JSON.parse(data.topics || '[]');
+    this.followers_count = data.followers_count || 0;
+    this.following_count = data.following_count || 0;
     this.created_at = data.created_at;
     this.updated_at = data.updated_at;
   }
@@ -22,8 +24,26 @@ class Character {
       avatar: this.avatar,
       bio: this.bio,
       personality: this.personality,
-      topics: JSON.stringify(this.topics)
+      topics: JSON.stringify(this.topics),
+      followers_count: this.followers_count,
+      following_count: this.following_count
     };
+  }
+
+  // Format follower count for display
+  getFormattedFollowerCount() {
+    if (this.followers_count >= 1000) {
+      return (this.followers_count / 1000).toFixed(1) + 'k';
+    }
+    return this.followers_count.toString();
+  }
+
+  // Format following count for display
+  getFormattedFollowingCount() {
+    if (this.following_count >= 1000) {
+      return (this.following_count / 1000).toFixed(1) + 'k';
+    }
+    return this.following_count.toString();
   }
 }
 
@@ -57,13 +77,24 @@ const updateCharacterAvatar = (id, avatarUrl) => {
   return result.changes > 0;
 };
 
+const updateCharacterFollowerCounts = (id, followersCount, followingCount) => {
+  const stmt = db.prepare(`
+    UPDATE characters 
+    SET followers_count = ?, following_count = ?, updated_at = CURRENT_TIMESTAMP 
+    WHERE id = ?
+  `);
+  
+  const result = stmt.run(followersCount, followingCount, id);
+  return result.changes > 0;
+};
+
 const createCharacter = (characterData) => {
   const character = new Character(characterData);
   const data = character.toDBFormat();
   
   const stmt = db.prepare(`
-    INSERT INTO characters (username, name, avatar, bio, personality, topics)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO characters (username, name, avatar, bio, personality, topics, followers_count, following_count)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   const result = stmt.run(
@@ -72,7 +103,9 @@ const createCharacter = (characterData) => {
     data.avatar,
     data.bio,
     data.personality,
-    data.topics
+    data.topics,
+    data.followers_count || 100, // Default starting followers
+    data.following_count || 50   // Default starting following
   );
   
   return getCharacterById(result.lastInsertRowid);
@@ -123,6 +156,7 @@ module.exports = {
   getCharacterById,
   getCharacterByUsername,
   updateCharacterAvatar,
+  updateCharacterFollowerCounts,
   createCharacter,
   updateCharacter,
   getCharacterPersonalities

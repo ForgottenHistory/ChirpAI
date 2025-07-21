@@ -4,14 +4,23 @@ const getCharacters = (req, res) => {
   try {
     const characters = getAllCharacters();
     
-    // Convert to frontend format
+    // Convert to frontend format with follower data
     const formattedCharacters = characters.map(char => ({
       id: char.id,
       username: char.username,
       name: char.name,
       avatar: char.avatar,
-      bio: char.bio
+      bio: char.bio,
+      followers_count: char.followers_count || 0,
+      following_count: char.following_count || 0
     }));
+    
+    console.log('Sending characters with follower data:', formattedCharacters.map(c => ({ 
+      id: c.id, 
+      username: c.username, 
+      followers: c.followers_count, 
+      following: c.following_count 
+    })));
     
     res.json(formattedCharacters);
   } catch (error) {

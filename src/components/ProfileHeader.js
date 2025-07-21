@@ -1,6 +1,14 @@
 import React from 'react';
 
 const ProfileHeader = ({ character, totalPosts }) => {
+  // Format follower/following counts
+  const formatCount = (count) => {
+    if (count >= 1000) {
+      return (count / 1000).toFixed(1) + 'k';
+    }
+    return count.toString();
+  };
+
   return (
     <div className="profile-header">
       <div className="profile-avatar-container">
@@ -23,11 +31,11 @@ const ProfileHeader = ({ character, totalPosts }) => {
             <span className="stat-label">posts</span>
           </div>
           <div className="stat">
-            <span className="stat-number">1.2k</span>
+            <span className="stat-number">{formatCount(character.followers_count || 0)}</span>
             <span className="stat-label">followers</span>
           </div>
           <div className="stat">
-            <span className="stat-number">543</span>
+            <span className="stat-number">{formatCount(character.following_count || 0)}</span>
             <span className="stat-label">following</span>
           </div>
         </div>

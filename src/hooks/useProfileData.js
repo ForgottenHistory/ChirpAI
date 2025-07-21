@@ -26,6 +26,13 @@ export const useProfileData = (userId) => {
           return;
         }
         
+        console.log('Found character with follower data:', {
+          id: foundCharacter.id,
+          username: foundCharacter.username,
+          followers_count: foundCharacter.followers_count,
+          following_count: foundCharacter.following_count
+        });
+        
         setCharacter(foundCharacter);
         
         // Fetch all posts and filter by user
@@ -60,6 +67,33 @@ export const useProfileData = (userId) => {
     fetchUserData();
   }, [userId]);
 
+  // Listen for follower updates via WebSocket (if available)
+  useEffect(() => {
+    const handleFollowerUpdates = (payload) => {
+      console.log('Received follower updates:', payload);
+      
+      // Update character data if this character was updated
+      const characterUpdate = payload.data.find(update => update.characterId === parseInt(userId));
+      if (characterUpdate && character) {
+        setCharacter(prevChar => ({
+          ...prevChar,
+          followers_count: characterUpdate.followers,
+          following_count: characterUpdate.following
+        }));
+        console.log('Updated character follower counts:', characterUpdate);
+      }
+    };
+
+    // Check if WebSocket is available (from the global window object)
+    if (window.socket) {
+      window.socket.on('followerUpdates', handleFollowerUpdates);
+      
+      return () => {
+        window.socket.off('followerUpdates', handleFollowerUpdates);
+      };
+    }
+  }, [userId, character]);
+
   const addComment = (postId, comment) => {
     setComments(prevComments => ({
       ...prevComments,
@@ -83,6 +117,7 @@ export const useProfileData = (userId) => {
     loading,
     error,
     setPosts,
+    setCharacter,
     addComment,
     getCharacterById,
     getCommentsForPost

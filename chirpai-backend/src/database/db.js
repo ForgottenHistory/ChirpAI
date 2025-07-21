@@ -64,6 +64,10 @@ const initDB = () => {
   // Initialize default characters if they don't exist
   initializeDefaultCharacters();
 
+  // Add follower functionality
+  addFollowerTables();
+  initializeFollowerData();
+
   console.log('Database initialized successfully');
 };
 
@@ -125,7 +129,88 @@ const initializeDefaultCharacters = () => {
   }
 };
 
+const addFollowerTables = () => {
+  try {
+    // Check if columns already exist
+    const tableInfo = db.prepare("PRAGMA table_info(characters)").all();
+    const hasFollowersColumn = tableInfo.some(col => col.name === 'followers_count');
+    const hasFollowingColumn = tableInfo.some(col => col.name === 'following_count');
+    
+    // Add columns if they don't exist
+    if (!hasFollowersColumn) {
+      db.exec(`ALTER TABLE characters ADD COLUMN followers_count INTEGER DEFAULT 0;`);
+      console.log('Added followers_count column');
+    }
+    
+    if (!hasFollowingColumn) {
+      db.exec(`ALTER TABLE characters ADD COLUMN following_count INTEGER DEFAULT 0;`);
+      console.log('Added following_count column');
+    }
+
+    // Followers table to track relationships
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS followers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        follower_id INTEGER NOT NULL,
+        following_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(follower_id, following_id),
+        FOREIGN KEY (follower_id) REFERENCES characters (id),
+        FOREIGN KEY (following_id) REFERENCES characters (id)
+      )
+    `);
+
+    console.log('Follower tables initialized');
+  } catch (error) {
+    console.error('Error adding follower tables:', error);
+  }
+};
+
+// Initialize follower data for existing characters
+const initializeFollowerData = () => {
+  try {
+    // Check if any character already has follower data
+    const checkData = db.prepare('SELECT COUNT(*) as count FROM characters WHERE followers_count > 0');
+    const { count } = checkData.get();
+    
+    if (count === 0) {
+      console.log('Initializing follower data for all characters...');
+      
+      // Set initial follower counts with some variation
+      const updateCounts = db.prepare(`
+        UPDATE characters 
+        SET followers_count = ?, following_count = ? 
+        WHERE id = ?
+      `);
+      
+      const initialData = [
+        { id: 1, followers: 1200 + Math.floor(Math.random() * 100), following: 543 + Math.floor(Math.random() * 50) },
+        { id: 2, followers: 890 + Math.floor(Math.random() * 100), following: 321 + Math.floor(Math.random() * 50) },
+        { id: 3, followers: 1450 + Math.floor(Math.random() * 100), following: 678 + Math.floor(Math.random() * 50) }
+      ];
+      
+      initialData.forEach(data => {
+        const result = updateCounts.run(data.followers, data.following, data.id);
+        console.log(`Set character ${data.id}: ${data.followers} followers, ${data.following} following (${result.changes} rows affected)`);
+      });
+      
+      // Verify the data was set
+      const verifyData = db.prepare('SELECT id, username, followers_count, following_count FROM characters');
+      const results = verifyData.all();
+      console.log('Verification - Character follower data:', results);
+      
+    } else {
+      console.log('Follower data already exists, skipping initialization');
+    }
+  } catch (error) {
+    console.error('Error initializing follower data:', error);
+  }
+};
+
 // Initialize database on import
 initDB();
+
+addFollowerTables();
+initializeFollowerData();
 
 module.exports = db;

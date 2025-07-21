@@ -5,10 +5,13 @@ import { api } from '../services/api';
 const Header = ({ onGeneratePost, onGenerateAvatars, generating, generatingAvatars, isConnected }) => {
   const [schedulerRunning, setSchedulerRunning] = useState(false);
   const [schedulerLoading, setSchedulerLoading] = useState(false);
+  const [followerServiceRunning, setFollowerServiceRunning] = useState(false);
+  const [followerServiceLoading, setFollowerServiceLoading] = useState(false);
 
   useEffect(() => {
-    // Check scheduler status on component mount
+    // Check both services status on component mount
     checkSchedulerStatus();
+    checkFollowerServiceStatus();
   }, []);
 
   const checkSchedulerStatus = async () => {
@@ -17,6 +20,15 @@ const Header = ({ onGeneratePost, onGenerateAvatars, generating, generatingAvata
       setSchedulerRunning(response.data.isRunning);
     } catch (error) {
       console.error('Error checking scheduler status:', error);
+    }
+  };
+
+  const checkFollowerServiceStatus = async () => {
+    try {
+      const response = await api.getFollowerServiceStatus();
+      setFollowerServiceRunning(response.data.isRunning);
+    } catch (error) {
+      console.error('Error checking follower service status:', error);
     }
   };
 
@@ -37,6 +49,36 @@ const Header = ({ onGeneratePost, onGenerateAvatars, generating, generatingAvata
       alert('Failed to toggle scheduler');
     } finally {
       setSchedulerLoading(false);
+    }
+  };
+
+  const toggleFollowerService = async () => {
+    setFollowerServiceLoading(true);
+    try {
+      if (followerServiceRunning) {
+        await api.stopFollowerService();
+        setFollowerServiceRunning(false);
+        console.log('Follower service stopped');
+      } else {
+        await api.startFollowerService();
+        setFollowerServiceRunning(true);
+        console.log('Follower service started');
+      }
+    } catch (error) {
+      console.error('Error toggling follower service:', error);
+      alert('Failed to toggle follower service');
+    } finally {
+      setFollowerServiceLoading(false);
+    }
+  };
+
+  const triggerFollowerUpdate = async () => {
+    try {
+      await api.triggerFollowerUpdate();
+      console.log('Follower update triggered');
+    } catch (error) {
+      console.error('Error triggering follower update:', error);
+      alert('Failed to trigger follower update');
     }
   };
 
@@ -85,6 +127,25 @@ const Header = ({ onGeneratePost, onGenerateAvatars, generating, generatingAvata
               ? '⏸️ Stop Auto-Posts' 
               : '▶️ Start Auto-Posts'
           }
+        </button>
+        <button 
+          className={`generate-btn follower-btn ${followerServiceRunning ? 'running' : ''}`}
+          onClick={toggleFollowerService}
+          disabled={followerServiceLoading}
+        >
+          {followerServiceLoading 
+            ? '⏳ Loading...' 
+            : followerServiceRunning 
+              ? '⏸️ Stop Followers' 
+              : '👥 Start Followers'
+          }
+        </button>
+        <button 
+          className="generate-btn trigger-btn"
+          onClick={triggerFollowerUpdate}
+          title="Trigger follower update now"
+        >
+          📊 Update Now
         </button>
       </div>
     </header>

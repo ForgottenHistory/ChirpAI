@@ -331,3 +331,37 @@
     padding: 4px 8px;
   }
 }
+
+.follower-btn {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+}
+
+.follower-btn.running {
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+}
+
+.trigger-btn {
+  background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+}
+
+.trigger-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Responsive button layout */
+@media (max-width: 1200px) {
+  .generate-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .generate-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
