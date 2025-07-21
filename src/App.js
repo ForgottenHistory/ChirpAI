@@ -5,11 +5,12 @@ import { api } from './services/api';
 import { usePosts } from './hooks/usePosts';
 import { useComments } from './hooks/useComments';
 import { useWebSocket } from './hooks/useWebSocket';
+import { UserProvider } from './contexts/UserContext';
 import Header from './components/Header';
 import Feed from './components/Feed';
 import UserProfile from './components/UserProfile';
 
-// Main App Content Component (everything except Router)
+// Main App Content Component (everything except Router and UserProvider)
 function AppContent() {
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +96,6 @@ function AppContent() {
 
     const handleSchedulerStatus = (payload) => {
       console.log('[WebSocket] Scheduler status update:', payload);
-      // You can add a status indicator in the UI here
     };
 
     // Subscribe to events
@@ -261,12 +261,14 @@ function AppContent() {
   );
 }
 
-// Main App Component with Router
+// Main App Component with Router and UserProvider
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <UserProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </UserProvider>
   );
 }
 

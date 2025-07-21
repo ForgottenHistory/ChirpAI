@@ -194,7 +194,22 @@ const switchUser = (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
+    // Set the new current user
     setCurrentUser(parseInt(user_id));
+    
+    // Auto-adjust admin mode based on user permissions
+    if (!user.is_admin) {
+      // If switching to non-admin user, disable admin mode
+      setAdminMode(false);
+      console.log(`Switched to non-admin user ${user.username}, admin mode disabled`);
+    } else {
+      // If switching to admin user, keep current admin mode or default to true
+      const currentAdminMode = getAdminMode();
+      if (!currentAdminMode) {
+        setAdminMode(true);
+        console.log(`Switched to admin user ${user.username}, admin mode enabled`);
+      }
+    }
     
     res.json({ 
       success: true, 
@@ -208,7 +223,8 @@ const switchUser = (req, res) => {
         followers_count: user.followers_count,
         following_count: user.following_count,
         is_admin: user.is_admin
-      }
+      },
+      is_admin_mode: getAdminMode()
     });
   } catch (error) {
     console.error('Error switching user:', error);

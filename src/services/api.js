@@ -46,6 +46,18 @@ export const api = {
   updateFollowerServiceConfig: (config) => axios.post(`${API_BASE_URL}/followers/config`, config),
   triggerFollowerUpdate: () => axios.post(`${API_BASE_URL}/followers/trigger`),
 
+  // User management
+  getUsers: () => axios.get(`${API_BASE_URL}/users`),
+  getUser: (userId) => axios.get(`${API_BASE_URL}/users/${userId}`),
+  createUser: (userData) => axios.post(`${API_BASE_URL}/users`, userData),
+  updateUser: (userId, updates) => axios.put(`${API_BASE_URL}/users/${userId}`, updates),
+  deleteUser: (userId) => axios.delete(`${API_BASE_URL}/users/${userId}`),
+
+  // Session management
+  getSession: () => axios.get(`${API_BASE_URL}/session`),
+  switchUser: (userId) => axios.post(`${API_BASE_URL}/session/switch-user`, { user_id: userId }),
+  toggleAdminMode: (isAdminMode) => axios.post(`${API_BASE_URL}/session/admin-mode`, { is_admin_mode: isAdminMode }),
+
   // Test
   test: () => axios.get(`${API_BASE_URL}/test`)
 };

@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+import { useUser } from '../contexts/UserContext';
+import UserSelector from './UserSelector';
 
 const Header = ({ onGeneratePost, onGenerateAvatars, generating, generatingAvatars, isConnected }) => {
+  const { isAdminMode, currentUser } = useUser();
   const [schedulerRunning, setSchedulerRunning] = useState(false);
   const [schedulerLoading, setSchedulerLoading] = useState(false);
   const [followerServiceRunning, setFollowerServiceRunning] = useState(false);
   const [followerServiceLoading, setFollowerServiceLoading] = useState(false);
 
   useEffect(() => {
-    // Check both services status on component mount
-    checkSchedulerStatus();
-    checkFollowerServiceStatus();
-  }, []);
+    // Check both services status on component mount, but only in admin mode
+    if (isAdminMode) {
+      checkSchedulerStatus();
+      checkFollowerServiceStatus();
+    }
+  }, [isAdminMode]); // Re-run when admin mode changes
 
   const checkSchedulerStatus = async () => {
     try {
@@ -88,66 +93,77 @@ const Header = ({ onGeneratePost, onGenerateAvatars, generating, generatingAvata
         <Link to="/" className="title-link">
           <h1>ChirpAI</h1>
         </Link>
-        <div className="connection-status">
-          <span className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
-            {isConnected ? '🟢 Live' : '🔴 Offline'}
-          </span>
+        
+        <div className="header-right">
+          <UserSelector />
+          <div className="connection-status">
+            <span className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
+              {isConnected ? '🟢 Live' : '🔴 Offline'}
+            </span>
+          </div>
         </div>
       </div>
-      <div className="generate-buttons">
-        <button 
-          className="generate-btn" 
-          onClick={() => onGeneratePost(false)}
-          disabled={generating}
-        >
-          {generating ? '🤖 Generating...' : '✨ Generate Post'}
-        </button>
-        <button 
-          className="generate-btn image-btn" 
-          onClick={() => onGeneratePost(true)}
-          disabled={generating}
-        >
-          {generating ? '🎨 Generating...' : '🎨 Generate with Image'}
-        </button>
-        <button 
-          className="generate-btn avatar-btn" 
-          onClick={onGenerateAvatars}
-          disabled={generatingAvatars}
-        >
-          {generatingAvatars ? '👤 Generating...' : '👤 Generate Avatars'}
-        </button>
-        <button 
-          className={`generate-btn scheduler-btn ${schedulerRunning ? 'running' : ''}`}
-          onClick={toggleScheduler}
-          disabled={schedulerLoading}
-        >
-          {schedulerLoading 
-            ? '⏳ Loading...' 
-            : schedulerRunning 
-              ? '⏸️ Stop Auto-Posts' 
-              : '▶️ Start Auto-Posts'
-          }
-        </button>
-        <button 
-          className={`generate-btn follower-btn ${followerServiceRunning ? 'running' : ''}`}
-          onClick={toggleFollowerService}
-          disabled={followerServiceLoading}
-        >
-          {followerServiceLoading 
-            ? '⏳ Loading...' 
-            : followerServiceRunning 
-              ? '⏸️ Stop Followers' 
-              : '👥 Start Followers'
-          }
-        </button>
-        <button 
-          className="generate-btn trigger-btn"
-          onClick={triggerFollowerUpdate}
-          title="Trigger follower update now"
-        >
-          📊 Update Now
-        </button>
-      </div>
+      
+      {/* Show admin controls only in admin mode */}
+      {isAdminMode && (
+        <div className="admin-controls">
+          <div className="admin-label">👑 Admin Controls</div>
+          <div className="generate-buttons">
+            <button 
+              className="generate-btn" 
+              onClick={() => onGeneratePost(false)}
+              disabled={generating}
+            >
+              {generating ? '🤖 Generating...' : '✨ Generate Post'}
+            </button>
+            <button 
+              className="generate-btn image-btn" 
+              onClick={() => onGeneratePost(true)}
+              disabled={generating}
+            >
+              {generating ? '🎨 Generating...' : '🎨 Generate with Image'}
+            </button>
+            <button 
+              className="generate-btn avatar-btn" 
+              onClick={onGenerateAvatars}
+              disabled={generatingAvatars}
+            >
+              {generatingAvatars ? '👤 Generating...' : '👤 Generate Avatars'}
+            </button>
+            <button 
+              className={`generate-btn scheduler-btn ${schedulerRunning ? 'running' : ''}`}
+              onClick={toggleScheduler}
+              disabled={schedulerLoading}
+            >
+              {schedulerLoading 
+                ? '⏳ Loading...' 
+                : schedulerRunning 
+                  ? '⏸️ Stop Auto-Posts' 
+                  : '▶️ Start Auto-Posts'
+              }
+            </button>
+            <button 
+              className={`generate-btn follower-btn ${followerServiceRunning ? 'running' : ''}`}
+              onClick={toggleFollowerService}
+              disabled={followerServiceLoading}
+            >
+              {followerServiceLoading 
+                ? '⏳ Loading...' 
+                : followerServiceRunning 
+                  ? '⏸️ Stop Followers' 
+                  : '👥 Start Followers'
+              }
+            </button>
+            <button 
+              className="generate-btn trigger-btn"
+              onClick={triggerFollowerUpdate}
+              title="Trigger follower update now"
+            >
+              📊 Update Now
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
