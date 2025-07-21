@@ -2,13 +2,13 @@ const db = require('../database/db');
 
 const createPost = (userId, content, imageUrl = null, userType = 'character') => {
   if (userType === 'user') {
-    // For user posts, we still need to set userId (for compatibility) and user_id/user_type
+    // For user posts, set userId to 0 (indicating not a character) and use user_id for actual user ID
     const stmt = db.prepare(`
       INSERT INTO posts (userId, user_id, content, imageUrl, likes, user_type)
-      VALUES (?, ?, ?, ?, 0, 'user')
+      VALUES (0, ?, ?, ?, 0, 'user')
     `);
     
-    const result = stmt.run(userId, userId, content, imageUrl);
+    const result = stmt.run(userId, content, imageUrl);
     
     // Get the created post
     const getPost = db.prepare('SELECT * FROM posts WHERE id = ?');
@@ -16,8 +16,8 @@ const createPost = (userId, content, imageUrl = null, userType = 'character') =>
   } else {
     // Original character post logic
     const stmt = db.prepare(`
-      INSERT INTO posts (userId, content, imageUrl, likes)
-      VALUES (?, ?, ?, 0)
+      INSERT INTO posts (userId, content, imageUrl, likes, user_type)
+      VALUES (?, ?, ?, 0, 'character')
     `);
     
     const result = stmt.run(userId, content, imageUrl);
@@ -30,14 +30,21 @@ const createPost = (userId, content, imageUrl = null, userType = 'character') =>
 
 const getAllPosts = () => {
   const stmt = db.prepare(`
-    SELECT *, 
-           COALESCE(user_type, 'character') as user_type,
-           COALESCE(user_id, userId) as user_id
+    SELECT id, userId, user_id, user_type, content, imageUrl, likes, timestamp, created_at
     FROM posts 
     ORDER BY created_at DESC
   `);
   
-  return stmt.all();
+  const posts = stmt.all();
+  console.log('Raw posts from database:', posts.map(p => ({
+    id: p.id,
+    userId: p.userId,
+    user_id: p.user_id,
+    user_type: p.user_type,
+    content: p.content.substring(0, 30) + '...'
+  })));
+  
+  return posts;
 };
 
 const getPostById = (id) => {
