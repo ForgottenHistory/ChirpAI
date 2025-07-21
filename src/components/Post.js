@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Comment from './Comment';
 
 const Post = ({ 
@@ -16,9 +17,13 @@ const Post = ({
   return (
     <div className="post">
       <div className="post-header">
-        <img src={character.avatar} alt={character.name} className="avatar" />
+        <Link to={`/user/${character.id}`} className="avatar-link">
+          <img src={character.avatar} alt={character.name} className="avatar" />
+        </Link>
         <div className="user-info">
-          <span className="username">@{character.username}</span>
+          <Link to={`/user/${character.id}`} className="username-link">
+            <span className="username">@{character.username}</span>
+          </Link>
           <span className="timestamp">{post.timestamp}</span>
         </div>
       </div>

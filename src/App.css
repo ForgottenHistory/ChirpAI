@@ -198,3 +198,31 @@
 .status-indicator.disconnected {
   color: #e74c3c;
 }
+
+.avatar-link {
+  text-decoration: none;
+}
+
+.avatar-link:hover .avatar {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+.username-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.username-link:hover {
+  text-decoration: underline;
+}
+
+.username-link .username {
+  font-weight: bold;
+  color: #262626;
+  cursor: pointer;
+}
+
+.username-link:hover .username {
+  color: #0095f6;
+}

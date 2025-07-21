@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import { api } from './services/api';
 import { usePosts } from './hooks/usePosts';
@@ -6,6 +7,7 @@ import { useComments } from './hooks/useComments';
 import { useWebSocket } from './hooks/useWebSocket';
 import Header from './components/Header';
 import Feed from './components/Feed';
+import UserProfile from './components/UserProfile';
 
 function App() {
   const [characters, setCharacters] = useState([]);
@@ -229,27 +231,34 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <Header 
-        onGeneratePost={handleGeneratePost}
-        onGenerateAvatars={handleGenerateAvatars}
-        generating={generating}
-        generatingAvatars={generatingAvatars}
-        isConnected={isConnected}
-      />
-      
-      <main className="main-content">
-        <Feed
-          posts={posts}
-          characters={characters}
-          likedPosts={likedPosts}
-          comments={comments}
-          onLike={handleToggleLike}
-          onComment={handleGenerateComment}
-          generatingComment={generatingComment}
+    <Router>
+      <div className="app">
+        <Header 
+          onGeneratePost={handleGeneratePost}
+          onGenerateAvatars={handleGenerateAvatars}
+          generating={generating}
+          generatingAvatars={generatingAvatars}
+          isConnected={isConnected}
         />
-      </main>
-    </div>
+        
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={
+              <Feed
+                posts={posts}
+                characters={characters}
+                likedPosts={likedPosts}
+                comments={comments}
+                onLike={handleToggleLike}
+                onComment={handleGenerateComment}
+                generatingComment={generatingComment}
+              />
+            } />
+            <Route path="/user/:userId" element={<UserProfile />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
 
