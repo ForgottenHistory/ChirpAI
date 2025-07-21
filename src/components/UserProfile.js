@@ -1,23 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
+import Comment from './Comment';
 import './UserProfile.css';
 
 const UserProfile = () => {
   const { userId } = useParams();
   const [character, setCharacter] = useState(null);
   const [posts, setPosts] = useState([]);
+  const [characters, setCharacters] = useState([]);
+  const [comments, setComments] = useState({});
+  const [likedPosts, setLikedPosts] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('photos'); // 'photos' or 'text'
+  const [activeTab, setActiveTab] = useState('photos');
+  const [generatingComment, setGeneratingComment] = useState(null);
+  const [expandedComments, setExpandedComments] = useState(new Set());
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
         
-        // Fetch character data
+        // Fetch all characters
         const charactersResponse = await api.getCharacters();
+        setCharacters(charactersResponse.data);
+        
+        // Find the specific character
         const foundCharacter = charactersResponse.data.find(char => char.id === parseInt(userId));
         
         if (!foundCharacter) {
@@ -33,6 +42,21 @@ const UserProfile = () => {
         
         setPosts(userPosts);
         
+        // Load comments for all user posts
+        const commentsPromises = userPosts.map(post => 
+          api.getComments(post.id).then(response => ({
+            postId: post.id,
+            comments: response.data
+          }))
+        );
+        
+        const commentsResults = await Promise.all(commentsPromises);
+        const commentsMap = {};
+        commentsResults.forEach(({ postId, comments }) => {
+          commentsMap[postId] = comments;
+        });
+        setComments(commentsMap);
+        
       } catch (err) {
         console.error('Error fetching user data:', err);
         setError('Failed to load user profile');
@@ -43,6 +67,94 @@ const UserProfile = () => {
 
     fetchUserData();
   }, [userId]);
+
+  const handleToggleLike = async (postId) => {
+    try {
+      await api.toggleLike(postId);
+      
+      // Update local like state
+      const newLikedPosts = new Set(likedPosts);
+      const isLiked = likedPosts.has(postId);
+      
+      if (isLiked) {
+        newLikedPosts.delete(postId);
+      } else {
+        newLikedPosts.add(postId);
+      }
+      
+      setLikedPosts(newLikedPosts);
+      
+      // Update post likes count
+      setPosts(posts.map(post => 
+        post.id === postId 
+          ? { ...post, likes: post.likes + (isLiked ? -1 : 1) }
+          : post
+      ));
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
+  const handleGenerateComment = async (postId) => {
+    if (generatingComment) return;
+    
+    setGeneratingComment(postId);
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+      
+      const availableCharacters = characters.filter(char => char.id !== post.userId);
+      const randomCommenter = availableCharacters[Math.floor(Math.random() * availableCharacters.length)];
+      
+      const response = await api.generateComment(
+        post.content,
+        randomCommenter.id,
+        post.userId,
+        postId
+      );
+
+      const newComment = {
+        id: response.data.id,
+        postId: response.data.postId,
+        userId: response.data.commenterId,
+        content: response.data.content,
+        timestamp: response.data.timestamp
+      };
+
+      // Add comment to local state
+      setComments(prevComments => ({
+        ...prevComments,
+        [postId]: [...(prevComments[postId] || []), newComment]
+      }));
+
+      // Auto-expand comments when a new one is generated
+      setExpandedComments(prev => new Set([...prev, postId]));
+      
+    } catch (error) {
+      console.error('Error generating comment:', error);
+      alert('Failed to generate comment. Please try again.');
+    } finally {
+      setGeneratingComment(null);
+    }
+  };
+
+  const toggleComments = (postId) => {
+    const newExpanded = new Set(expandedComments);
+    if (expandedComments.has(postId)) {
+      newExpanded.delete(postId);
+    } else {
+      newExpanded.add(postId);
+    }
+    setExpandedComments(newExpanded);
+  };
+
+  const getCharacterById = (userId) => {
+    return characters.find(char => char.id === userId);
+  };
+
+  const getCommentsForPost = (postId) => {
+    return comments[postId] || [];
+  };
 
   if (loading) {
     return (
@@ -160,7 +272,7 @@ const UserProfile = () => {
                       ❤️ {post.likes}
                     </span>
                     <span className="overlay-stat">
-                      💬 {Math.floor(Math.random() * 10)}
+                      💬 {getCommentsForPost(post.id).length}
                     </span>
                   </div>
                 </div>
@@ -177,20 +289,58 @@ const UserProfile = () => {
               <p>When {character.name} shares text posts, they'll appear here.</p>
             </div>
           ) : (
-            postsTextOnly.map((post) => (
-              <div key={post.id} className="text-post">
-                <div className="text-post-content">
-                  <p>{post.content}</p>
-                </div>
-                <div className="text-post-footer">
-                  <span className="text-post-timestamp">{post.timestamp}</span>
-                  <div className="text-post-stats">
-                    <span>❤️ {post.likes}</span>
-                    <span>💬 {Math.floor(Math.random() * 10)}</span>
+            postsTextOnly.map((post) => {
+              const postComments = getCommentsForPost(post.id);
+              const isCommentsExpanded = expandedComments.has(post.id);
+              
+              return (
+                <div key={post.id} className="text-post">
+                  <div className="text-post-content">
+                    <p>{post.content}</p>
                   </div>
+                  
+                  <div className="text-post-actions">
+                    <button 
+                      className={`like-btn ${likedPosts.has(post.id) ? 'liked' : ''}`}
+                      onClick={() => handleToggleLike(post.id)}
+                    >
+                      {likedPosts.has(post.id) ? '❤️' : '🤍'} {post.likes}
+                    </button>
+                    <button 
+                      onClick={() => handleGenerateComment(post.id)}
+                      disabled={generatingComment === post.id}
+                    >
+                      {generatingComment === post.id ? '💭 Generating...' : '💬 Comment'}
+                    </button>
+                    {postComments.length > 0 && (
+                      <button 
+                        className="toggle-comments-btn"
+                        onClick={() => toggleComments(post.id)}
+                      >
+                        {isCommentsExpanded ? '🔽' : '▶️'} {postComments.length} comment{postComments.length !== 1 ? 's' : ''}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="text-post-footer">
+                    <span className="text-post-timestamp">{post.timestamp}</span>
+                  </div>
+
+                  {/* Comments section */}
+                  {postComments.length > 0 && isCommentsExpanded && (
+                    <div className="comments-section">
+                      {postComments.map(comment => (
+                        <Comment 
+                          key={comment.id} 
+                          comment={comment} 
+                          character={getCharacterById(comment.userId)}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
