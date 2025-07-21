@@ -23,12 +23,6 @@ const UserSelector = () => {
   };
 
   const handleToggleAdminMode = async () => {
-    // Only allow admin users to enable admin mode
-    if (!isAdminMode && !currentUser.is_admin) {
-      alert('Only admin users can enable admin mode');
-      return;
-    }
-    
     try {
       await toggleAdminMode();
     } catch (error) {
@@ -87,20 +81,18 @@ const UserSelector = () => {
                     {formatCount(user.followers_count)} followers
                   </div>
                 </div>
-                {user.is_admin && <span className="admin-badge">Admin</span>}
+                {/* Remove admin badge since everyone can be admin */}
               </div>
             ))}
           </div>
 
           <div className="dropdown-actions">
-            {currentUser.is_admin && (
-              <button 
-                className={`admin-mode-btn ${isAdminMode ? 'active' : ''}`}
-                onClick={handleToggleAdminMode}
-              >
-                {isAdminMode ? '👑 Admin Mode' : '👤 User Mode'}
-              </button>
-            )}
+            <button 
+              className={`admin-mode-btn ${isAdminMode ? 'active' : ''}`}
+              onClick={handleToggleAdminMode}
+            >
+              {isAdminMode ? '👑 Admin Mode' : '👤 User Mode'}
+            </button>
           </div>
         </div>
       )}

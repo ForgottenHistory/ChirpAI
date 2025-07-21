@@ -24,7 +24,6 @@ const getUsers = (req, res) => {
       bio: user.bio,
       followers_count: user.followers_count,
       following_count: user.following_count,
-      is_admin: user.is_admin,
       created_at: user.created_at
     }));
     
@@ -52,7 +51,6 @@ const getUser = (req, res) => {
       bio: user.bio,
       followers_count: user.followers_count,
       following_count: user.following_count,
-      is_admin: user.is_admin,
       created_at: user.created_at
     });
   } catch (error) {
@@ -120,8 +118,7 @@ const updateUserProfile = (req, res) => {
         avatar: updatedUser.avatar,
         bio: updatedUser.bio,
         followers_count: updatedUser.followers_count,
-        following_count: updatedUser.following_count,
-        is_admin: updatedUser.is_admin
+        following_count: updatedUser.following_count
       });
     } else {
       res.status(500).json({ error: 'Failed to update user' });
@@ -169,8 +166,7 @@ const getSession = (req, res) => {
         avatar: currentUser.avatar,
         bio: currentUser.bio,
         followers_count: currentUser.followers_count,
-        following_count: currentUser.following_count,
-        is_admin: currentUser.is_admin
+        following_count: currentUser.following_count
       } : null,
       is_admin_mode: isAdminMode,
       session_data: session
@@ -197,19 +193,7 @@ const switchUser = (req, res) => {
     // Set the new current user
     setCurrentUser(parseInt(user_id));
     
-    // Auto-adjust admin mode based on user permissions
-    if (!user.is_admin) {
-      // If switching to non-admin user, disable admin mode
-      setAdminMode(false);
-      console.log(`Switched to non-admin user ${user.username}, admin mode disabled`);
-    } else {
-      // If switching to admin user, keep current admin mode or default to true
-      const currentAdminMode = getAdminMode();
-      if (!currentAdminMode) {
-        setAdminMode(true);
-        console.log(`Switched to admin user ${user.username}, admin mode enabled`);
-      }
-    }
+    console.log(`Switched to user: ${user.username}`);
     
     res.json({ 
       success: true, 
@@ -221,8 +205,7 @@ const switchUser = (req, res) => {
         avatar: user.avatar,
         bio: user.bio,
         followers_count: user.followers_count,
-        following_count: user.following_count,
-        is_admin: user.is_admin
+        following_count: user.following_count
       },
       is_admin_mode: getAdminMode()
     });

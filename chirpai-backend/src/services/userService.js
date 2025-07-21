@@ -9,7 +9,6 @@ class User {
     this.bio = data.bio;
     this.followers_count = data.followers_count || 0;
     this.following_count = data.following_count || 0;
-    this.is_admin = Boolean(data.is_admin); // Convert 1/0 to true/false
     this.created_at = data.created_at;
     this.updated_at = data.updated_at;
   }
@@ -55,12 +54,13 @@ const createUser = (userData) => {
     VALUES (?, ?, ?, ?, ?, ?)
   `);
   
-  const defaultAvatar = `https://via.placeholder.com/150/6366f1/ffffff?text=${userData.username.charAt(0).toUpperCase()}`;
+  // Use provided avatar or create default one
+  const avatarUrl = userData.avatar || `https://via.placeholder.com/150/6366f1/ffffff?text=${userData.username.charAt(0).toUpperCase()}`;
   
   const result = stmt.run(
     userData.username,
     userData.display_name || userData.username,
-    userData.avatar || defaultAvatar,
+    avatarUrl,
     userData.bio || '',
     0, // Starting followers
     0  // Starting following
@@ -132,13 +132,20 @@ const setAdminMode = (isAdmin) => {
 
 const getUserSession = () => {
   const stmt = db.prepare(`
-    SELECT us.*, u.username, u.display_name, u.is_admin
+    SELECT us.*, u.username, u.display_name
     FROM user_session us
     LEFT JOIN users u ON us.current_user_id = u.id
     WHERE us.id = 1
   `);
   
   return stmt.get();
+};
+
+// Check if any users exist
+const hasUsers = () => {
+  const stmt = db.prepare('SELECT COUNT(*) as count FROM users');
+  const { count } = stmt.get();
+  return count > 0;
 };
 
 module.exports = {
@@ -153,5 +160,6 @@ module.exports = {
   setCurrentUser,
   getAdminMode,
   setAdminMode,
-  getUserSession
+  getUserSession,
+  hasUsers
 };

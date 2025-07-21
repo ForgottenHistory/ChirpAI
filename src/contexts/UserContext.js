@@ -16,6 +16,7 @@ export const UserProvider = ({ children }) => {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   // Load session data on mount
   useEffect(() => {
@@ -29,8 +30,14 @@ export const UserProvider = ({ children }) => {
       console.log('Session loaded:', response.data);
       setCurrentUser(response.data.current_user);
       setIsAdminMode(response.data.is_admin_mode);
+      
+      // Check if we need onboarding (no current user)
+      if (!response.data.current_user) {
+        setNeedsOnboarding(true);
+      }
     } catch (error) {
       console.error('Error loading session:', error);
+      setNeedsOnboarding(true);
     } finally {
       setLoading(false);
     }
@@ -40,6 +47,11 @@ export const UserProvider = ({ children }) => {
     try {
       const response = await api.getUsers();
       setUsers(response.data);
+      
+      // If no users exist at all, we definitely need onboarding
+      if (response.data.length === 0) {
+        setNeedsOnboarding(true);
+      }
     } catch (error) {
       console.error('Error loading users:', error);
     }
@@ -82,6 +94,11 @@ export const UserProvider = ({ children }) => {
       const response = await api.createUser(userData);
       const newUser = response.data;
       setUsers(prev => [...prev, newUser]);
+      
+      // Automatically switch to the new user
+      await switchUser(newUser.id);
+      
+      setNeedsOnboarding(false);
       console.log('Created user:', newUser.username);
       return newUser;
     } catch (error) {
@@ -140,6 +157,7 @@ export const UserProvider = ({ children }) => {
     isAdminMode,
     users,
     loading,
+    needsOnboarding,
     switchUser,
     toggleAdminMode,
     createUser,

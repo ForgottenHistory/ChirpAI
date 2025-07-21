@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import { api } from './services/api';
 import { usePosts } from './hooks/usePosts';
 import { useComments } from './hooks/useComments';
 import { useWebSocket } from './hooks/useWebSocket';
-import { UserProvider } from './contexts/UserContext';
+import { UserProvider, useUser } from './contexts/UserContext';
 import Header from './components/Header';
 import Feed from './components/Feed';
 import UserProfile from './components/UserProfile';
+import UserCreation from './components/UserCreation';
 
 // Main App Content Component (everything except Router and UserProvider)
 function AppContent() {
+  const { loading, needsOnboarding, currentUser } = useUser();
   const [characters, setCharacters] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatingComment, setGeneratingComment] = useState(null);
   const [generatingAvatars, setGeneratingAvatars] = useState(false);
@@ -22,8 +24,15 @@ function AppContent() {
   const { comments, addComment, setComments } = useComments();
   const { isConnected, subscribe, unsubscribe } = useWebSocket();
 
+  // Always call useEffect, but conditionally execute the logic
   useEffect(() => {
     const fetchData = async () => {
+      // Only fetch data if we have a current user and don't need onboarding
+      if (!currentUser || needsOnboarding) {
+        setDataLoading(false);
+        return;
+      }
+
       try {
         const [charactersResponse, postsResponse] = await Promise.all([
           api.getCharacters(),
@@ -48,19 +57,19 @@ function AppContent() {
         });
         setComments(commentsMap);
         
-        setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
-        setLoading(false);
+      } finally {
+        setDataLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [currentUser, needsOnboarding, setPosts, setComments]);
 
-  // WebSocket event handlers
+  // WebSocket event handlers - always call useEffect
   useEffect(() => {
-    if (!isConnected) return;
+    if (!isConnected || !currentUser || needsOnboarding) return;
 
     const handleNewPost = (payload) => {
       console.log('[WebSocket] New post received:', payload);
@@ -111,14 +120,31 @@ function AppContent() {
       unsubscribe('likeUpdate', handleLikeUpdate);
       unsubscribe('schedulerStatus', handleSchedulerStatus);
     };
-  }, [isConnected, subscribe, unsubscribe, addPost, addComment, setPosts]);
+  }, [isConnected, currentUser, needsOnboarding, subscribe, unsubscribe, addPost, addComment, setPosts]);
 
-  // Request notification permission on mount
+  // Request notification permission on mount - always call useEffect
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
   }, []);
+
+  // Show loading screen while user context is loading
+  if (loading) {
+    return (
+      <div className="app">
+        <div className="loading-screen">
+          <div className="loading-spinner"></div>
+          <div>Loading ChirpAI...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show onboarding if needed
+  if (needsOnboarding) {
+    return <UserCreation />;
+  }
 
   const handleGeneratePost = async (includeImage = false) => {
     if (generating) return;
@@ -222,7 +248,7 @@ function AppContent() {
     }
   };
 
-  if (loading) {
+  if (dataLoading) {
     return (
       <div className="app">
         <Header />
