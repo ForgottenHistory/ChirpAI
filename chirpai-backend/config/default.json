@@ -1,0 +1,46 @@
+{
+  "scheduler": {
+    "posting": {
+      "minPostInterval": 2,
+      "maxPostInterval": 4,
+      "minCommentInterval": 3,
+      "maxCommentInterval": 8
+    },
+    "chances": {
+      "imagePostChance": 0.2,
+      "commentChance": 0.3
+    }
+  },
+  "rateLimit": {
+    "minDelay": 2000,
+    "retryDelays": [5000, 10000, 30000]
+  },
+  "ai": {
+    "model": "moonshotai/Kimi-K2-Instruct",
+    "maxTokensPost": 150,
+    "maxTokensComment": 80
+  },
+  "imageGeneration": {
+    "automatic1111Url": "http://localhost:7860",
+    "defaultSettings": {
+      "steps": 25,
+      "width": 1024,
+      "height": 1024,
+      "cfg_scale": 6,
+      "sampler_name": "Euler a",
+      "n_iter": 1,
+      "batch_size": 1
+    },
+    "avatarSettings": {
+      "steps": 25,
+      "width": 1024,
+      "height": 1024,
+      "cfg_scale": 6,
+      "sampler_name": "Euler a"
+    }
+  },
+  "server": {
+    "port": 5000,
+    "imageUrl": "http://localhost:5000"
+  }
+}
