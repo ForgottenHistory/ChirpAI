@@ -12,11 +12,11 @@ export const api = {
   getPosts: () => axios.get(`${API_BASE_URL}/posts`),
   generatePost: (characterId, includeImage = false) =>
     axios.post(`${API_BASE_URL}/generate-post`, { characterId, includeImage }),
-  
+
   // User posts
   createUserPost: (content, imageUrl = null) =>
     axios.post(`${API_BASE_URL}/create-user-post`, { content, imageUrl }),
-    
+
   toggleLike: (postId) =>
     axios.post(`${API_BASE_URL}/toggle-like`, { postId }),
 
@@ -62,6 +62,16 @@ export const api = {
   getSession: () => axios.get(`${API_BASE_URL}/session`),
   switchUser: (userId) => axios.post(`${API_BASE_URL}/session/switch-user`, { user_id: userId }),
   toggleAdminMode: (isAdminMode) => axios.post(`${API_BASE_URL}/session/admin-mode`, { is_admin_mode: isAdminMode }),
+
+  // Messages
+  getConversations: () => axios.get(`${API_BASE_URL}/conversations`),
+  getOrCreateConversation: (characterId) =>
+    axios.get(`${API_BASE_URL}/conversations/character/${characterId}`),
+  getMessages: (conversationId) =>
+    axios.get(`${API_BASE_URL}/conversations/${conversationId}/messages`),
+  sendMessage: (conversationId, content) =>
+    axios.post(`${API_BASE_URL}/conversations/${conversationId}/messages`, { content }),
+  getUnreadMessageCount: () => axios.get(`${API_BASE_URL}/messages/unread-count`),
 
   // Test
   test: () => axios.get(`${API_BASE_URL}/test`)

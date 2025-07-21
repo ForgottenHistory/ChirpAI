@@ -674,3 +674,25 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.profile-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.message-btn {
+  background: #f0f0f0;
+  color: #262626;
+  border: 1px solid #ddd;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.message-btn:hover {
+  background: #e0e0e0;
+  border-color: #bbb;
+}

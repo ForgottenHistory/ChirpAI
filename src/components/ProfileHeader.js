@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 
 const ProfileHeader = ({ character, totalPosts }) => {
   const { currentUser } = useUser();
+  const navigate = useNavigate();
   
   // Format follower/following counts
   const formatCount = (count) => {
@@ -14,6 +16,10 @@ const ProfileHeader = ({ character, totalPosts }) => {
 
   // Check if this is the current user's own profile
   const isOwnProfile = currentUser && currentUser.id === character.id;
+
+  const handleMessage = () => {
+    navigate(`/messages/${character.id}`);
+  };
 
   return (
     <div className="profile-header">
@@ -32,7 +38,12 @@ const ProfileHeader = ({ character, totalPosts }) => {
         <div className="profile-username">
           <h1>@{character.username}</h1>
           {!isOwnProfile && (
-            <button className="follow-btn">Follow</button>
+            <div className="profile-actions">
+              <button className="follow-btn">Follow</button>
+              <button className="message-btn" onClick={handleMessage}>
+                Message
+              </button>
+            </div>
           )}
         </div>
         

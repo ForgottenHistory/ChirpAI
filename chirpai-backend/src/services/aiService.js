@@ -88,7 +88,48 @@ Just return the comment, nothing else.`;
   return chatCompletion.choices[0].message.content.trim();
 };
 
+const generateDirectMessage = async (characterId, userName, userMessage) => {
+  const characterPersonalities = getCharacterPersonalities();
+  const character = characterPersonalities[characterId];
+  
+  if (!character) {
+    throw new Error('Character not found');
+  }
+
+  console.log(`[DM] Generating response for ${character.name} to ${userName}`);
+
+  const prompt = `You are ${character.name}, having a private conversation with ${userName}.
+
+Your personality: ${character.personality}
+
+${userName} just sent you this message: "${userMessage}"
+
+Write a personal, friendly response that ${character.name} would send in a direct message. Keep it conversational and natural, like you're chatting with a friend. Don't be overly formal. You can ask questions, share thoughts, or react to what they said. Keep it under 200 characters.
+
+Just return the message response, nothing else.`;
+
+  // Queue the AI request to handle rate limiting
+  const requestFunction = async () => {
+    return await openai.chat.completions.create({
+      model: settings.ai.model,
+      max_tokens: settings.ai.maxTokensComment, // Use comment token limit for DMs
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant that generates direct messages for AI characters.' },
+        { role: 'user', content: prompt }
+      ],
+    });
+  };
+
+  const chatCompletion = await rateLimitService.queueRequest(requestFunction);
+  const response = chatCompletion.choices[0].message.content.trim();
+  
+  console.log(`[DM] ${character.name} responded: "${response}"`);
+  return response;
+};
+
+// Update the module.exports to include the new function
 module.exports = {
   generatePost,
-  generateComment
+  generateComment,
+  generateDirectMessage
 };

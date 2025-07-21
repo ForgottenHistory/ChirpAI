@@ -122,6 +122,34 @@ const initializeTables = (db) => {
   `);
 
   console.log('Database tables initialized');
-};
 
+  // Conversations table - tracks message threads between users/characters
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      character_id INTEGER NOT NULL,
+      last_message_at DATETIME DEFAULT (datetime('now')),
+      created_at DATETIME DEFAULT (datetime('now')),
+      updated_at DATETIME DEFAULT (datetime('now')),
+      UNIQUE(user_id, character_id),
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      FOREIGN KEY (character_id) REFERENCES characters (id)
+    )
+  `);
+
+  // Messages table - individual messages in conversations
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER NOT NULL,
+      sender_type TEXT NOT NULL CHECK (sender_type IN ('user', 'character')),
+      sender_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      read_at DATETIME,
+      created_at DATETIME DEFAULT (datetime('now')),
+      FOREIGN KEY (conversation_id) REFERENCES conversations (id)
+    )
+  `);
+};
 module.exports = { initializeTables };
