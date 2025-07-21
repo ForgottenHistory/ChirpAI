@@ -209,11 +209,34 @@ const updateAIConfig = (type, updates) => {
   return newConfig;
 };
 
+// Calculate realistic typing time based on message content
+const calculateTypingTime = (messageContent) => {
+  // Base typing speed: ~60 WPM (words per minute) = 1 word per second
+  // But AI should "think" a bit, so we'll make it slower
+  const wordsPerSecond = 0.8;
+  const wordCount = messageContent.trim().split(/\s+/).length;
+  
+  // Calculate time based on word count
+  const baseTime = (wordCount / wordsPerSecond) * 1000; // Convert to milliseconds
+  
+  // Add some randomness (±30%)
+  const randomFactor = 0.7 + Math.random() * 0.6;
+  let typingTime = baseTime * randomFactor;
+  
+  // Set reasonable bounds (1-8 seconds)
+  typingTime = Math.max(1000, Math.min(8000, typingTime));
+  
+  console.log(`[TYPING] Calculated typing time: ${typingTime}ms for ${wordCount} words`);
+  return typingTime;
+};
+
+// Export the function
 module.exports = {
   generatePost,
   generateComment,
   generateDirectMessage,
   getAIConfig,
   updateAIConfig,
-  estimateTokens
+  estimateTokens,
+  calculateTypingTime
 };

@@ -99,7 +99,7 @@ class WebSocketService {
     this.io.emit('newComment', payload);
     console.log(`[WEBSOCKET] 📡 Broadcasted new comment by ${character.name} to ${this.connectedClients.size} clients`);
   }
-  
+
   // Broadcast new comment to all connected clients
   broadcastNewComment(comment, character, postId) {
     if (!this.io) return;
@@ -192,6 +192,67 @@ class WebSocketService {
 
     this.io.emit('followerUpdates', payload);
     console.log(`[WEBSOCKET] 📡 Broadcasted follower updates for ${updates.length} characters to ${this.connectedClients.size} clients`);
+  }
+
+  // Broadcast typing indicator start
+  broadcastTypingStart(conversationId, characterId, characterName) {
+    if (!this.io) return;
+
+    const payload = {
+      type: 'TYPING_START',
+      data: {
+        conversationId,
+        characterId,
+        characterName,
+        isTyping: true
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    this.io.emit('typingStart', payload);
+    console.log(`[WEBSOCKET] 📡 Broadcasting typing start for ${characterName} in conversation ${conversationId}`);
+  }
+
+  // Broadcast typing indicator stop
+  broadcastTypingStop(conversationId, characterId, characterName) {
+    if (!this.io) return;
+
+    const payload = {
+      type: 'TYPING_STOP',
+      data: {
+        conversationId,
+        characterId,
+        characterName,
+        isTyping: false
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    this.io.emit('typingStop', payload);
+    console.log(`[WEBSOCKET] 📡 Broadcasting typing stop for ${characterName} in conversation ${conversationId}`);
+  }
+
+  // Broadcast new direct message
+  broadcastNewDirectMessage(message, conversation, character) {
+    if (!this.io) return;
+
+    const payload = {
+      type: 'NEW_DIRECT_MESSAGE',
+      data: {
+        message,
+        conversationId: conversation.id,
+        character: {
+          id: character.id,
+          username: character.username,
+          name: character.name,
+          avatar: character.avatar
+        }
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    this.io.emit('newDirectMessage', payload);
+    console.log(`[WEBSOCKET] 📡 Broadcasted new direct message from ${character.name}`);
   }
 }
 
