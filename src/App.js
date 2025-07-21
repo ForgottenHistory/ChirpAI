@@ -9,7 +9,8 @@ import Header from './components/Header';
 import Feed from './components/Feed';
 import UserProfile from './components/UserProfile';
 
-function App() {
+// Main App Content Component (everything except Router)
+function AppContent() {
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -231,33 +232,40 @@ function App() {
   }
 
   return (
+    <div className="app">
+      <Header 
+        onGeneratePost={handleGeneratePost}
+        onGenerateAvatars={handleGenerateAvatars}
+        generating={generating}
+        generatingAvatars={generatingAvatars}
+        isConnected={isConnected}
+      />
+      
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={
+            <Feed
+              posts={posts}
+              characters={characters}
+              likedPosts={likedPosts}
+              comments={comments}
+              onLike={handleToggleLike}
+              onComment={handleGenerateComment}
+              generatingComment={generatingComment}
+            />
+          } />
+          <Route path="/user/:userId" element={<UserProfile />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
+// Main App Component with Router
+function App() {
+  return (
     <Router>
-      <div className="app">
-        <Header 
-          onGeneratePost={handleGeneratePost}
-          onGenerateAvatars={handleGenerateAvatars}
-          generating={generating}
-          generatingAvatars={generatingAvatars}
-          isConnected={isConnected}
-        />
-        
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={
-              <Feed
-                posts={posts}
-                characters={characters}
-                likedPosts={likedPosts}
-                comments={comments}
-                onLike={handleToggleLike}
-                onComment={handleGenerateComment}
-                generatingComment={generatingComment}
-              />
-            } />
-            <Route path="/user/:userId" element={<UserProfile />} />
-          </Routes>
-        </main>
-      </div>
+      <AppContent />
     </Router>
   );
 }

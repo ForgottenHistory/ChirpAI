@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 
 const Header = ({ onGeneratePost, onGenerateAvatars, generating, generatingAvatars, isConnected }) => {
@@ -42,7 +43,9 @@ const Header = ({ onGeneratePost, onGenerateAvatars, generating, generatingAvata
   return (
     <header className="header">
       <div className="header-top">
-        <h1>ChirpAI</h1>
+        <Link to="/" className="title-link">
+          <h1>ChirpAI</h1>
+        </Link>
         <div className="connection-status">
           <span className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
             {isConnected ? '🟢 Live' : '🔴 Offline'}

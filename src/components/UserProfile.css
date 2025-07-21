@@ -5,6 +5,27 @@
   font-family: Arial, sans-serif;
 }
 
+.profile-navigation {
+  margin-bottom: 20px;
+}
+
+.back-to-feed {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: #0095f6;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.back-to-feed:hover {
+  background: #f0f8ff;
+  color: #1877f2;
+}
+
 .profile-header {
   display: flex;
   gap: 40px;
@@ -188,6 +209,52 @@
   gap: 8px;
 }
 
+/* Text posts styles */
+.text-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.text-post {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 20px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.text-post-content {
+  margin-bottom: 15px;
+}
+
+.text-post-content p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #262626;
+}
+
+.text-post-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.text-post-timestamp {
+  font-size: 14px;
+  color: #8e8e8e;
+}
+
+.text-post-stats {
+  display: flex;
+  gap: 15px;
+  font-size: 14px;
+  color: #8e8e8e;
+}
+
 .no-posts {
   grid-column: 1 / -1;
   text-align: center;
@@ -243,7 +310,7 @@
   .profile-username h1 {
     font-size: 24px;
   }
-  s
+  
   .profile-stats {
     gap: 20px;
   }
@@ -259,5 +326,9 @@
   
   .posts-grid {
     gap: 2px;
+  }
+
+  .text-post {
+    padding: 15px;
   }
 }
