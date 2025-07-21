@@ -44,7 +44,14 @@ const UserSelector = () => {
   return (
     <div className="user-selector">
       <div className="current-user" onClick={() => setShowDropdown(!showDropdown)}>
-        <img src={currentUser.avatar} alt={currentUser.display_name} className="user-avatar" />
+        <img 
+          src={currentUser.avatar || '/avatars/avatar1.png'} 
+          alt={currentUser.display_name} 
+          className="user-avatar"
+          onError={(e) => {
+            e.target.src = '/avatars/avatar1.png';
+          }}
+        />
         <div className="user-info">
           <div className="user-name">{currentUser.display_name}</div>
           <div className="user-stats">
@@ -73,7 +80,14 @@ const UserSelector = () => {
                 className={`user-option ${currentUser.id === user.id ? 'active' : ''}`}
                 onClick={() => handleSwitchUser(user.id)}
               >
-                <img src={user.avatar} alt={user.display_name} className="option-avatar" />
+                <img 
+                  src={user.avatar || '/avatars/avatar1.png'} 
+                  alt={user.display_name} 
+                  className="option-avatar"
+                  onError={(e) => {
+                    e.target.src = '/avatars/avatar1.png';
+                  }}
+                />
                 <div className="option-info">
                   <div className="option-name">{user.display_name}</div>
                   <div className="option-username">@{user.username}</div>
@@ -81,7 +95,6 @@ const UserSelector = () => {
                     {formatCount(user.followers_count)} followers
                   </div>
                 </div>
-                {/* Remove admin badge since everyone can be admin */}
               </div>
             ))}
           </div>

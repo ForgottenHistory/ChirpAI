@@ -10,19 +10,21 @@ const UserCreation = ({ onUserCreated }) => {
     bio: ''
   });
   const [selectedAvatar, setSelectedAvatar] = useState(0);
+  const [uploadedAvatar, setUploadedAvatar] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [creating, setCreating] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Predefined avatar options
+  // Predefined avatar options - using local files from public folder
   const avatarOptions = [
-    'https://via.placeholder.com/150/6366f1/ffffff?text=😊',
-    'https://via.placeholder.com/150/10b981/ffffff?text=🌟',
-    'https://via.placeholder.com/150/f59e0b/ffffff?text=🎨',
-    'https://via.placeholder.com/150/ef4444/ffffff?text=🚀',
-    'https://via.placeholder.com/150/8b5cf6/ffffff?text=💜',
-    'https://via.placeholder.com/150/06b6d4/ffffff?text=🌊',
-    'https://via.placeholder.com/150/84cc16/ffffff?text=🌱',
-    'https://via.placeholder.com/150/f97316/ffffff?text=🔥'
+    '/avatars/avatar1.png',
+    '/avatars/avatar2.png', 
+    '/avatars/avatar3.png',
+    '/avatars/avatar4.png',
+    '/avatars/avatar5.png',
+    '/avatars/avatar6.png',
+    '/avatars/avatar7.png',
+    '/avatars/avatar8.png'
   ];
 
   const validateUsername = (username) => {
@@ -57,6 +59,38 @@ const UserCreation = ({ onUserCreated }) => {
     }
   };
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setErrors({ avatar: 'Please select an image file' });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors({ avatar: 'Image must be smaller than 5MB' });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      // Create a data URL for preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setUploadedAvatar(e.target.result);
+        setSelectedAvatar(-1); // Deselect predefined avatars
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      setErrors({ avatar: 'Failed to process image' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -78,7 +112,7 @@ const UserCreation = ({ onUserCreated }) => {
         username: formData.username.toLowerCase().trim(),
         display_name: formData.display_name.trim(),
         bio: formData.bio.trim(),
-        avatar: avatarOptions[selectedAvatar]
+        avatar: uploadedAvatar || avatarOptions[selectedAvatar]
       };
 
       const newUser = await createUser(userData);
@@ -111,12 +145,52 @@ const UserCreation = ({ onUserCreated }) => {
           {/* Avatar Selection */}
           <div className="form-section">
             <label className="form-label">Choose Your Avatar</label>
+            
+            {/* Upload Option */}
+            <div className="avatar-upload-section">
+              <label className="avatar-upload-btn">
+                {uploadingAvatar ? (
+                  <div className="upload-loading">
+                    <span className="loading-spinner"></span>
+                    Uploading...
+                  </div>
+                ) : (
+                  <>📁 Upload Your Own</>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  style={{ display: 'none' }}
+                  disabled={uploadingAvatar}
+                />
+              </label>
+              {errors.avatar && <span className="error-text">{errors.avatar}</span>}
+            </div>
+
+            {/* Custom uploaded avatar preview */}
+            {uploadedAvatar && (
+              <div className="uploaded-avatar-preview">
+                <div
+                  className={`avatar-option uploaded ${selectedAvatar === -1 ? 'selected' : ''}`}
+                  onClick={() => setSelectedAvatar(-1)}
+                >
+                  <img src={uploadedAvatar} alt="Uploaded avatar" />
+                </div>
+                <span className="upload-label">Your Upload</span>
+              </div>
+            )}
+
+            {/* Predefined avatars */}
             <div className="avatar-grid">
               {avatarOptions.map((avatar, index) => (
                 <div
                   key={index}
                   className={`avatar-option ${selectedAvatar === index ? 'selected' : ''}`}
-                  onClick={() => setSelectedAvatar(index)}
+                  onClick={() => {
+                    setSelectedAvatar(index);
+                    setUploadedAvatar(null);
+                  }}
                 >
                   <img src={avatar} alt={`Avatar ${index + 1}`} />
                 </div>
