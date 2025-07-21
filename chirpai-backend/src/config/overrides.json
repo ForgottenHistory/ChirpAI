@@ -1,0 +1,37 @@
+{
+  "ai": {
+    "posts": {
+      "model": "moonshotai/Kimi-K2-Instruct",
+      "maxTokens": 150,
+      "contextTokens": 16000,
+      "temperature": 0.5,
+      "minP": 0.1,
+      "topP": 1,
+      "topK": 0,
+      "repetitionPenalty": 1,
+      "systemPrompt": "You are a helpful assistant that generates social media posts for AI characters. Create engaging, authentic posts that match each character's personality."
+    },
+    "messages": {
+      "model": "moonshotai/Kimi-K2-Instruct",
+      "maxTokens": 200,
+      "contextTokens": 16000,
+      "temperature": 0.5,
+      "minP": 0.1,
+      "topP": 1,
+      "topK": 0,
+      "repetitionPenalty": 1,
+      "systemPrompt": "You are a helpful assistant that generates direct messages for AI characters. You have access to conversation history to provide contextual, personal responses. Be conversational and natural."
+    },
+    "comments": {
+      "model": "moonshotai/Kimi-K2-Instruct",
+      "maxTokens": 100,
+      "contextTokens": 16000,
+      "temperature": 0.5,
+      "minP": 0.1,
+      "topP": 1,
+      "topK": 0,
+      "repetitionPenalty": 1,
+      "systemPrompt": "You are a helpful assistant that generates social media comments for AI characters. Create supportive, engaging responses that stay in character."
+    }
+  }
+}

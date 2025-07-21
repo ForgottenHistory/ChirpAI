@@ -1,164 +1,120 @@
 const config = require('config');
 const fs = require('fs');
 const path = require('path');
+const configStorageService = require('../services/configStorageService');
 
 class Settings {
   constructor() {
     this.config = config;
     this.configPath = path.join(__dirname, '../../config/default.json');
     
-    // Runtime overrides - stored in memory
-    this.runtimeOverrides = {};
-    
-    console.log('[CONFIG] Settings initialized');
+    console.log('[CONFIG] Settings initialized with persistent storage');
   }
 
   // Scheduler settings
   get scheduler() {
-    return this.config.get('scheduler');
+    const base = this.config.get('scheduler');
+    return configStorageService.applyOverrides(base, 'scheduler');
   }
 
   get posting() {
-    return this.config.get('scheduler.posting');
+    const base = this.config.get('scheduler.posting');
+    return configStorageService.applyOverrides(base, 'scheduler.posting');
   }
 
   get chances() {
-    return this.config.get('scheduler.chances');
+    const base = this.config.get('scheduler.chances');
+    return configStorageService.applyOverrides(base, 'scheduler.chances');
   }
 
   // Rate limiting settings
   get rateLimit() {
-    return this.config.get('rateLimit');
+    const base = this.config.get('rateLimit');
+    return configStorageService.applyOverrides(base, 'rateLimit');
   }
 
-  // AI settings with runtime overrides
+  // AI settings with persistent overrides
   get ai() {
-    const baseAI = this.config.get('ai');
-    
-    // Apply runtime overrides
-    const result = JSON.parse(JSON.stringify(baseAI)); // Deep clone
-    
-    if (this.runtimeOverrides.ai) {
-      for (const [type, overrides] of Object.entries(this.runtimeOverrides.ai)) {
-        if (result[type]) {
-          result[type] = { ...result[type], ...overrides };
-        }
-      }
-    }
-    
-    return result;
+    const base = this.config.get('ai');
+    return configStorageService.applyOverrides(base, 'ai');
   }
 
   // Image generation settings
   get imageGeneration() {
-    return this.config.get('imageGeneration');
+    const base = this.config.get('imageGeneration');
+    return configStorageService.applyOverrides(base, 'imageGeneration');
   }
 
   get automatic1111Url() {
-    return this.config.get('imageGeneration.automatic1111Url');
+    return this.get('imageGeneration.automatic1111Url');
   }
 
   get defaultImageSettings() {
-    return this.config.get('imageGeneration.defaultSettings');
+    return this.get('imageGeneration.defaultSettings');
   }
 
   get avatarSettings() {
-    return this.config.get('imageGeneration.avatarSettings');
+    return this.get('imageGeneration.avatarSettings');
   }
 
   // Server settings
   get server() {
-    return this.config.get('server');
+    const base = this.config.get('server');
+    return configStorageService.applyOverrides(base, 'server');
   }
 
   get port() {
-    return this.config.get('server.port');
+    return this.get('server.port');
   }
 
   get imageUrl() {
-    return this.config.get('server.imageUrl');
+    return this.get('server.imageUrl');
   }
 
-  // Get all settings with runtime overrides applied
+  // Get all settings with overrides applied
   getAll() {
     const base = this.config.util.toObject();
-    
-    // Apply runtime overrides
-    if (this.runtimeOverrides.ai) {
-      for (const [type, overrides] of Object.entries(this.runtimeOverrides.ai)) {
-        if (base.ai && base.ai[type]) {
-          base.ai[type] = { ...base.ai[type], ...overrides };
-        }
-      }
-    }
-    
-    return base;
+    return configStorageService.applyOverrides(base);
   }
 
-  // Update settings (runtime only)
+  // Update settings (persistent)
   updateRuntime(path, value) {
-    console.log(`[CONFIG] Updating runtime setting ${path}`);
-    
-    // Handle AI config updates specifically
-    if (path.startsWith('ai.')) {
-      const [, type] = path.split('.');
-      
-      if (!this.runtimeOverrides.ai) {
-        this.runtimeOverrides.ai = {};
-      }
-      
-      this.runtimeOverrides.ai[type] = value;
-      console.log(`[CONFIG] Runtime override set for ai.${type}`);
-      return;
-    }
-    
-    // For other paths, you could implement similar logic
-    console.log(`[CONFIG] Runtime update for ${path} not implemented yet`);
+    console.log(`[CONFIG] Updating persistent setting ${path}`);
+    configStorageService.setOverride(path, value);
   }
 
   // Get a specific setting by dot notation path with overrides
   get(path) {
-    // Handle AI settings specially
-    if (path.startsWith('ai.')) {
-      const [, type, ...rest] = path.split('.');
-      const aiConfig = this.ai;
-      
-      if (rest.length === 0) {
-        return aiConfig[type];
-      } else {
-        const property = rest.join('.');
-        return this.getNestedProperty(aiConfig[type], property);
-      }
+    // Check if there's an override first
+    const override = configStorageService.getOverride(path);
+    if (override !== undefined) {
+      return override;
     }
     
-    return this.config.get(path);
-  }
-
-  // Helper to get nested properties
-  getNestedProperty(obj, path) {
-    return path.split('.').reduce((current, key) => current && current[key], obj);
+    // Fall back to base config
+    try {
+      return this.config.get(path);
+    } catch (error) {
+      return undefined;
+    }
   }
 
   // Check if a setting exists
   has(path) {
-    try {
-      this.get(path);
-      return true;
-    } catch (error) {
-      return false;
-    }
+    return configStorageService.hasOverride(path) || this.config.has(path);
   }
 
-  // Save current config to file (for persistence)
+  // Remove a setting override (revert to default)
+  removeOverride(path) {
+    return configStorageService.removeOverride(path);
+  }
+
+  // Save current config to the main config file (backup/export)
   saveToFile() {
     try {
       const currentConfig = this.getAll();
       fs.writeFileSync(this.configPath, JSON.stringify(currentConfig, null, 2));
-      console.log('[CONFIG] Configuration saved to file');
-      
-      // Clear runtime overrides since they're now persisted
-      this.runtimeOverrides = {};
-      
+      console.log('[CONFIG] Configuration exported to main config file');
       return true;
     } catch (error) {
       console.error('[CONFIG] Error saving configuration:', error);
@@ -166,15 +122,14 @@ class Settings {
     }
   }
 
-  // Reload config from file
+  // Reload config from file (clears overrides)
   reloadFromFile() {
     try {
-      // Clear runtime overrides
-      this.runtimeOverrides = {};
+      configStorageService.clearAllOverrides();
       
       delete require.cache[require.resolve('config')];
       this.config = require('config');
-      console.log('[CONFIG] Configuration reloaded from file');
+      console.log('[CONFIG] Configuration reloaded from file, overrides cleared');
       return true;
     } catch (error) {
       console.error('[CONFIG] Error reloading configuration:', error);
@@ -182,15 +137,31 @@ class Settings {
     }
   }
 
-  // Clear runtime overrides
-  clearRuntimeOverrides() {
-    this.runtimeOverrides = {};
-    console.log('[CONFIG] Runtime overrides cleared');
+  // Clear all overrides (revert to defaults)
+  clearAllOverrides() {
+    configStorageService.clearAllOverrides();
+    console.log('[CONFIG] All overrides cleared, reverted to defaults');
   }
 
-  // Get runtime overrides (for debugging)
-  getRuntimeOverrides() {
-    return JSON.parse(JSON.stringify(this.runtimeOverrides));
+  // Get current overrides (for debugging/display)
+  getOverrides() {
+    return configStorageService.getAllOverrides();
+  }
+
+  // Create backup of current overrides
+  createBackup() {
+    return configStorageService.createBackup();
+  }
+
+  // Reset a specific section to defaults
+  resetSection(section) {
+    const sectionOverrides = configStorageService.getOverride(section);
+    if (sectionOverrides) {
+      configStorageService.removeOverride(section);
+      console.log(`[CONFIG] Reset section ${section} to defaults`);
+      return true;
+    }
+    return false;
   }
 }
 

@@ -198,6 +198,57 @@ const clearModelsCache = (req, res) => {
   }
 };
 
+// Export current config (download all settings)
+const exportConfig = (req, res) => {
+  try {
+    const allConfigs = settings.getAll();
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    res.setHeader('Content-Disposition', `attachment; filename=chirpai-config-${timestamp}.json`);
+    res.setHeader('Content-Type', 'application/json');
+    res.json(allConfigs);
+  } catch (error) {
+    console.error('Error exporting config:', error);
+    res.status(500).json({ error: 'Failed to export configuration' });
+  }
+};
+
+// Get current overrides (what's been changed from defaults)
+const getCurrentOverrides = (req, res) => {
+  try {
+    const overrides = settings.getOverrides();
+    res.json({
+      overrides,
+      hasOverrides: Object.keys(overrides).length > 0
+    });
+  } catch (error) {
+    console.error('Error getting overrides:', error);
+    res.status(500).json({ error: 'Failed to get configuration overrides' });
+  }
+};
+
+// Reset all settings to defaults
+const resetAllSettings = (req, res) => {
+  try {
+    // Create backup first
+    const backupFile = settings.createBackup();
+    
+    // Clear all overrides
+    settings.clearAllOverrides();
+    
+    res.json({
+      success: true,
+      message: 'All settings reset to defaults',
+      backupCreated: !!backupFile,
+      backupFile
+    });
+  } catch (error) {
+    console.error('Error resetting all settings:', error);
+    res.status(500).json({ error: 'Failed to reset settings' });
+  }
+};
+
+// Add to module.exports
 module.exports = {
   getAllAIConfigs,
   getAIConfigByType,
@@ -205,5 +256,8 @@ module.exports = {
   resetAIConfigByType,
   searchAvailableModels,
   getModelCategories,
-  clearModelsCache
+  clearModelsCache,
+  exportConfig,
+  getCurrentOverrides,
+  resetAllSettings
 };
