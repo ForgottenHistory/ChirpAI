@@ -12,6 +12,11 @@ export const api = {
   getPosts: () => axios.get(`${API_BASE_URL}/posts`),
   generatePost: (characterId, includeImage = false) =>
     axios.post(`${API_BASE_URL}/generate-post`, { characterId, includeImage }),
+  
+  // User posts
+  createUserPost: (content, imageUrl = null) =>
+    axios.post(`${API_BASE_URL}/create-user-post`, { content, imageUrl }),
+    
   toggleLike: (postId) =>
     axios.post(`${API_BASE_URL}/toggle-like`, { postId }),
 

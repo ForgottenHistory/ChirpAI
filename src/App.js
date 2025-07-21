@@ -249,6 +249,10 @@ function AppContent() {
     }
   };
 
+  const handleUserPostCreated = (newPost) => {
+    addPost(newPost);
+  };
+
   if (dataLoading) {
     return (
       <div className="app">
@@ -279,6 +283,7 @@ function AppContent() {
               onLike={handleToggleLike}
               onComment={handleGenerateComment}
               generatingComment={generatingComment}
+              onPostCreated={handleUserPostCreated}
             />
           } />
           <Route path="/user/:userId" element={<UserProfile />} />

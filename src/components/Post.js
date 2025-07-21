@@ -12,20 +12,32 @@ const Post = ({
   onComment, 
   onToggleComments,
   generatingComment,
-  getCharacterById 
+  getCharacterById,
+  getUserById,
+  isUserPost = false
 }) => {
   if (!character) return null;
 
   const hasComments = comments.length > 0;
+  
+  // Determine the profile link based on post type
+  const profileLink = isUserPost ? `/profile/${character.id}` : `/user/${character.id}`;
 
   return (
     <div className="post">
       <div className="post-header">
-        <Link to={`/user/${character.id}`} className="avatar-link">
-          <img src={character.avatar} alt={character.name} className="avatar" />
+        <Link to={profileLink} className="avatar-link">
+          <img 
+            src={character.avatar || '/avatars/avatar1.png'} 
+            alt={character.name} 
+            className="avatar"
+            onError={(e) => {
+              e.target.src = '/avatars/avatar1.png';
+            }}
+          />
         </Link>
         <div className="user-info">
-          <Link to={`/user/${character.id}`} className="username-link">
+          <Link to={profileLink} className="username-link">
             <span className="username">@{character.username}</span>
           </Link>
           <span className="timestamp">{post.timestamp}</span>
@@ -68,13 +80,17 @@ const Post = ({
       
       {hasComments && isCommentsExpanded && (
         <div className="comments-section">
-          {comments.map(comment => (
-            <Comment 
-              key={comment.id} 
-              comment={comment} 
-              character={getCharacterById(comment.userId)}
-            />
-          ))}
+          {comments.map(comment => {
+            // Comments are always from AI characters for now
+            const commenter = getCharacterById(comment.userId);
+            return (
+              <Comment 
+                key={comment.id} 
+                comment={comment} 
+                character={commenter}
+              />
+            );
+          })}
         </div>
       )}
     </div>

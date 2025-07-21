@@ -182,6 +182,49 @@ app.get('/api/debug/characters', (req, res) => {
   }
 });
 
+// User post routes
+// User post routes
+app.post('/api/create-user-post', async (req, res) => {
+  try {
+    const { content, imageUrl = null } = req.body;
+    const { getCurrentUser } = require('./src/services/userService');
+    const { createPost } = require('./src/services/postService');
+    
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      return res.status(401).json({ error: 'No user logged in' });
+    }
+    
+    console.log(`[USER_POST] Creating post for user ${currentUser.id} (${currentUser.username})`);
+    console.log(`[USER_POST] Content: "${content}"`);
+    
+    // Create post with user_type
+    const dbPost = createPost(currentUser.id, content, imageUrl, 'user');
+    
+    console.log(`[USER_POST] Created post with ID: ${dbPost.id}`);
+    console.log(`[USER_POST] Post data:`, {
+      id: dbPost.id,
+      userId: dbPost.userId,
+      user_id: dbPost.user_id,
+      user_type: dbPost.user_type,
+      content: dbPost.content
+    });
+    
+    res.json({
+      id: dbPost.id,
+      content: dbPost.content,
+      imageUrl: dbPost.imageUrl,
+      likes: dbPost.likes || 0,
+      userId: currentUser.id, // Keep for compatibility
+      user_id: currentUser.id,
+      user_type: 'user'
+    });
+  } catch (error) {
+    console.error('Error creating user post:', error);
+    res.status(500).json({ error: 'Failed to create post' });
+  }
+});
+
 // User management routes
 app.get('/api/users', getUsers);
 app.get('/api/users/:id', getUser);

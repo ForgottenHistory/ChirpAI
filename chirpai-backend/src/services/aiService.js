@@ -40,20 +40,33 @@ Just return the post content, nothing else.`;
   return postContent;
 };
 
-const generateComment = async (postContent, commenterCharacterId, originalPosterId) => {
+const generateComment = async (postContent, commenterCharacterId, originalPosterId, originalPosterName = null, originalPosterType = 'character') => {
   const characterPersonalities = getCharacterPersonalities();
   const commenter = characterPersonalities[commenterCharacterId];
-  const originalPoster = characterPersonalities[originalPosterId];
   
-  if (!commenter || !originalPoster) {
-    throw new Error('Character not found');
+  if (!commenter) {
+    throw new Error('Commenter character not found');
   }
 
-  const prompt = `You are ${commenter.name}, responding to a social media post by ${originalPoster.name}.
+  let originalPosterInfo;
+  
+  if (originalPosterType === 'user') {
+    // Commenting on a user's post
+    originalPosterInfo = originalPosterName;
+  } else {
+    // Commenting on a character's post
+    const originalPoster = characterPersonalities[originalPosterId];
+    if (!originalPoster) {
+      throw new Error('Original poster character not found');
+    }
+    originalPosterInfo = originalPoster.name;
+  }
+
+  const prompt = `You are ${commenter.name}, responding to a social media post by ${originalPosterInfo}.
 
 Your personality: ${commenter.personality}
 
-${originalPoster.name}'s post: "${postContent}"
+${originalPosterInfo}'s post: "${postContent}"
 
 Write a short, friendly comment (under 100 characters) that ${commenter.name} would make in response to this post. Stay in character and be supportive/engaging. Include an emoji if appropriate.
 
