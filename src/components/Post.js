@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Comment from './Comment';
+import { formatRelativeTime } from '../utils/timeUtils';
 
 const Post = ({ 
   post, 
@@ -23,6 +24,26 @@ const Post = ({
   // Determine the profile link based on post type
   const profileLink = isUserPost ? `/profile/${character.id}` : `/user/${character.id}`;
 
+  // Safe timestamp handling
+  const getTimestamp = () => {
+    if (!post.timestamp) return 'unknown time';
+    try {
+      return formatRelativeTime(post.timestamp);
+    } catch (error) {
+      console.error('Error formatting timestamp:', post.timestamp, error);
+      return 'unknown time';
+    }
+  };
+
+  const getFullTimestamp = () => {
+    if (!post.timestamp) return 'Unknown date';
+    try {
+      return new Date(post.timestamp).toLocaleString();
+    } catch (error) {
+      return 'Unknown date';
+    }
+  };
+
   return (
     <div className="post">
       <div className="post-header">
@@ -40,7 +61,9 @@ const Post = ({
           <Link to={profileLink} className="username-link">
             <span className="username">@{character.username}</span>
           </Link>
-          <span className="timestamp">{post.timestamp}</span>
+          <span className="timestamp" title={getFullTimestamp()}>
+            {getTimestamp()}
+          </span>
         </div>
       </div>
       

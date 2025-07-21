@@ -4,8 +4,8 @@ const createPost = (userId, content, imageUrl = null, userType = 'character') =>
   if (userType === 'user') {
     // For user posts, set userId to 0 (indicating not a character) and use user_id for actual user ID
     const stmt = db.prepare(`
-      INSERT INTO posts (userId, user_id, content, imageUrl, likes, user_type)
-      VALUES (0, ?, ?, ?, 0, 'user')
+      INSERT INTO posts (userId, user_id, content, imageUrl, likes, user_type, timestamp, created_at)
+      VALUES (0, ?, ?, ?, 0, 'user', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `);
     
     const result = stmt.run(userId, content, imageUrl);
@@ -14,10 +14,10 @@ const createPost = (userId, content, imageUrl = null, userType = 'character') =>
     const getPost = db.prepare('SELECT * FROM posts WHERE id = ?');
     return getPost.get(result.lastInsertRowid);
   } else {
-    // Original character post logic
+    // Original character post logic - also ensure timestamp is set
     const stmt = db.prepare(`
-      INSERT INTO posts (userId, content, imageUrl, likes, user_type)
-      VALUES (?, ?, ?, 0, 'character')
+      INSERT INTO posts (userId, content, imageUrl, likes, user_type, timestamp, created_at)
+      VALUES (?, ?, ?, 0, 'character', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `);
     
     const result = stmt.run(userId, content, imageUrl);
@@ -30,21 +30,23 @@ const createPost = (userId, content, imageUrl = null, userType = 'character') =>
 
 const getAllPosts = () => {
   const stmt = db.prepare(`
-    SELECT id, userId, user_id, user_type, content, imageUrl, likes, timestamp, created_at
+    SELECT id, userId, user_id, user_type, content, imageUrl, likes, 
+           COALESCE(timestamp, created_at) as timestamp, created_at
     FROM posts 
     ORDER BY created_at DESC
   `);
   
   const posts = stmt.all();
-  /**
   console.log('Raw posts from database:', posts.map(p => ({
     id: p.id,
     userId: p.userId,
     user_id: p.user_id,
     user_type: p.user_type,
+    timestamp: p.timestamp,
+    created_at: p.created_at,
     content: p.content.substring(0, 30) + '...'
   })));
-   */
+  
   return posts;
 };
 

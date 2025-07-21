@@ -40,17 +40,7 @@ const getPosts = (req, res) => {
   try {
     const posts = getAllPosts();
     
-    /**
-    console.log('[POST_CONTROLLER] Raw posts from service:', posts.map(p => ({
-      id: p.id,
-      userId: p.userId,
-      user_id: p.user_id,
-      user_type: p.user_type,
-      content: p.content.substring(0, 30) + '...'
-    })));
-    */
-   
-    // Format timestamps
+    // Send the raw timestamp - let frontend format it
     const formattedPosts = posts.map(post => ({
       id: post.id,
       userId: post.userId,
@@ -59,19 +49,9 @@ const getPosts = (req, res) => {
       content: post.content,
       imageUrl: post.imageUrl,
       likes: post.likes,
-      timestamp: formatTimestamp(post.created_at)
+      timestamp: post.timestamp || post.created_at // Use raw timestamp from DB
     }));
-
-    /**
-    console.log('[POST_CONTROLLER] Formatted posts being sent to frontend:', formattedPosts.map(p => ({
-      id: p.id,
-      userId: p.userId,
-      user_id: p.user_id,
-      user_type: p.user_type,
-      content: p.content.substring(0, 30) + '...'
-    })));
-    */
-
+    
     res.json(formattedPosts);
   } catch (error) {
     console.error('Error fetching posts:', error);

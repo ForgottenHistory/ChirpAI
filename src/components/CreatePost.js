@@ -10,12 +10,41 @@ const CreatePost = ({ onPostCreated }) => {
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [errors, setErrors] = useState({});
+
+  const MAX_CONTENT_LENGTH = 280;
+
+  const validatePost = () => {
+    const newErrors = {};
+    
+    if (!content.trim()) {
+      newErrors.content = 'Post cannot be empty';
+    } else if (content.length > MAX_CONTENT_LENGTH) {
+      newErrors.content = `Post is too long (${content.length}/${MAX_CONTENT_LENGTH} characters)`;
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleContentChange = (e) => {
+    const newContent = e.target.value;
+    setContent(newContent);
+    
+    // Clear errors when user starts typing
+    if (errors.content && newContent.trim()) {
+      setErrors(prev => ({ ...prev, content: null }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!content.trim() || isPosting) return;
+    
+    if (!validatePost() || isPosting) return;
 
     setIsPosting(true);
+    setErrors({});
+    
     try {
       let imageUrl = null;
       
@@ -35,7 +64,7 @@ const CreatePost = ({ onPostCreated }) => {
         content: response.data.content,
         imageUrl: response.data.imageUrl,
         likes: response.data.likes || 0,
-        timestamp: 'just now'
+        timestamp: response.data.timestamp || new Date().toISOString()
       };
 
       if (onPostCreated) {
@@ -47,9 +76,10 @@ const CreatePost = ({ onPostCreated }) => {
       setSelectedImage(null);
       setImagePreview(null);
       setShowCreatePost(false);
+      setErrors({});
     } catch (error) {
       console.error('Error creating post:', error);
-      alert('Failed to create post. Please try again.');
+      setErrors({ submit: 'Failed to create post. Please try again.' });
     } finally {
       setIsPosting(false);
     }
@@ -116,13 +146,17 @@ const CreatePost = ({ onPostCreated }) => {
           <form onSubmit={handleSubmit} className="post-form">
             <textarea
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={handleContentChange}
               placeholder="Share your thoughts..."
-              className="post-textarea"
-              maxLength={280}
+              className={`post-textarea ${errors.content ? 'error' : ''}`}
+              maxLength={MAX_CONTENT_LENGTH + 50} // Allow typing a bit over to show error
               rows={3}
               disabled={isPosting}
             />
+            
+            {errors.content && (
+              <div className="post-error">{errors.content}</div>
+            )}
             
             {/* Image Preview */}
             {imagePreview && (
@@ -141,15 +175,21 @@ const CreatePost = ({ onPostCreated }) => {
             
             <div className="form-footer">
               <div className="character-count">
-                <span className={content.length > 250 ? 'warning' : ''}>
-                  {content.length}/280
+                <span className={content.length > MAX_CONTENT_LENGTH - 20 ? 'warning' : content.length > MAX_CONTENT_LENGTH ? 'over-limit' : ''}>
+                  {content.length}/{MAX_CONTENT_LENGTH}
                 </span>
               </div>
               
               <div className="form-actions">
                 <button
                   type="button"
-                  onClick={() => setShowCreatePost(false)}
+                  onClick={() => {
+                    setShowCreatePost(false);
+                    setErrors({});
+                    setContent('');
+                    setSelectedImage(null);
+                    setImagePreview(null);
+                  }}
                   className="cancel-btn"
                   disabled={isPosting}
                 >
@@ -157,7 +197,7 @@ const CreatePost = ({ onPostCreated }) => {
                 </button>
                 
                 {/* Image Upload Button */}
-                <label className="image-upload-btn">
+                <label className={`image-upload-btn ${isPosting ? 'disabled' : ''}`}>
                   📷 Add Photo
                   <input
                     type="file"
@@ -171,12 +211,23 @@ const CreatePost = ({ onPostCreated }) => {
                 <button
                   type="submit"
                   className="post-btn"
-                  disabled={!content.trim() || isPosting}
+                  disabled={!content.trim() || isPosting || content.length > MAX_CONTENT_LENGTH}
                 >
-                  {isPosting ? 'Posting...' : 'Post'}
+                  {isPosting ? (
+                    <>
+                      <span className="loading-spinner-btn"></span>
+                      Posting...
+                    </>
+                  ) : (
+                    'Post'
+                  )}
                 </button>
               </div>
             </div>
+            
+            {errors.submit && (
+              <div className="post-error submit-error">{errors.submit}</div>
+            )}
           </form>
         </div>
       )}

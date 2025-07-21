@@ -111,7 +111,7 @@ const initializeUserSession = (db) => {
 const fixUserPosts = (db) => {
   try {
     // First, let's see what posts exist
-    const allPosts = db.prepare('SELECT id, userId, user_id, user_type FROM posts').all();
+    const allPosts = db.prepare('SELECT id, userId, user_id, user_type, timestamp, created_at FROM posts').all();
     console.log('Current posts in database:', allPosts);
     
     // Fix any existing user posts to have userId = 0 and proper user_type
@@ -138,8 +138,20 @@ const fixUserPosts = (db) => {
       console.log(`Fixed ${result2.changes} character posts to have user_type = 'character'`);
     }
     
+    // Fix posts with null timestamps
+    const fixTimestamps = db.prepare(`
+      UPDATE posts 
+      SET timestamp = created_at
+      WHERE timestamp IS NULL AND created_at IS NOT NULL
+    `);
+    
+    const result3 = fixTimestamps.run();
+    if (result3.changes > 0) {
+      console.log(`Fixed ${result3.changes} posts to have proper timestamps`);
+    }
+    
     // Check results
-    const updatedPosts = db.prepare('SELECT id, userId, user_id, user_type FROM posts').all();
+    const updatedPosts = db.prepare('SELECT id, userId, user_id, user_type, timestamp, created_at FROM posts').all();
     console.log('Updated posts in database:', updatedPosts);
     
   } catch (error) {
