@@ -1,0 +1,162 @@
+.floating-buttons-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 999;
+}
+
+/* Adjust position when messages header is present */
+.messages-page .floating-buttons-container {
+  top: 90px; /* Move below the messages header */
+}
+
+.floating-btn {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  position: relative;
+  color: white;
+  backdrop-filter: blur(10px);
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Messages button styling */
+.messages-btn {
+  background: linear-gradient(135deg, #0095f6 0%, #1877f2 100%);
+  animation-delay: 0s;
+}
+
+.messages-btn:hover {
+  background: linear-gradient(135deg, #1877f2 0%, #0095f6 100%);
+  transform: scale(1.05) translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 149, 246, 0.3);
+}
+
+/* Settings button styling */
+.settings-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  animation-delay: 0.5s;
+}
+
+.settings-btn:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  transform: scale(1.05) translateY(-1px);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+}
+
+.settings-btn:hover svg {
+  transform: rotate(90deg);
+}
+
+.floating-btn:active {
+  transform: scale(1.02) translateY(0);
+}
+
+.floating-btn svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+}
+
+/* Notification badge */
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ff3040;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  animation: pulse 2s infinite;
+  line-height: 1;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+/* Subtle floating animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Pulsing animation for notification badge */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .floating-buttons-container {
+    top: 16px;
+    right: 16px;
+    gap: 10px;
+  }
+  
+  .messages-page .floating-buttons-container {
+    top: 76px; /* Adjust for smaller mobile header */
+  }
+  
+  .floating-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+  }
+  
+  .floating-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .notification-badge {
+    font-size: 9px;
+    min-width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    top: -3px;
+    right: -3px;
+  }
+}
+
+/* Smooth entry animation when buttons appear */
+.floating-btn {
+  animation: 
+    float 4s ease-in-out infinite,
+    fadeInScale 0.5s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

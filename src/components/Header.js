@@ -93,7 +93,7 @@ const Header = ({ onGeneratePost, onGenerateAvatars, generating, generatingAvata
         <Link to="/" className="title-link">
           <h1>ChirpAI</h1>
         </Link>
-        
+
         <div className="header-right">
           <UserSelector />
           <div className="connection-status">
@@ -103,58 +103,58 @@ const Header = ({ onGeneratePost, onGenerateAvatars, generating, generatingAvata
           </div>
         </div>
       </div>
-      
+
       {/* Show admin controls only in admin mode */}
       {isAdminMode && (
         <div className="admin-controls">
           <div className="admin-label">👑 Admin Controls</div>
           <div className="generate-buttons">
-            <button 
-              className="generate-btn" 
+            <button
+              className="generate-btn"
               onClick={() => onGeneratePost(false)}
               disabled={generating}
             >
               {generating ? '🤖 Generating...' : '✨ Generate Post'}
             </button>
-            <button 
-              className="generate-btn image-btn" 
+            <button
+              className="generate-btn image-btn"
               onClick={() => onGeneratePost(true)}
               disabled={generating}
             >
               {generating ? '🎨 Generating...' : '🎨 Generate with Image'}
             </button>
-            <button 
-              className="generate-btn avatar-btn" 
+            <button
+              className="generate-btn avatar-btn"
               onClick={onGenerateAvatars}
               disabled={generatingAvatars}
             >
               {generatingAvatars ? '👤 Generating...' : '👤 Generate Avatars'}
             </button>
-            <button 
+            <button
               className={`generate-btn scheduler-btn ${schedulerRunning ? 'running' : ''}`}
               onClick={toggleScheduler}
               disabled={schedulerLoading}
             >
-              {schedulerLoading 
-                ? '⏳ Loading...' 
-                : schedulerRunning 
-                  ? '⏸️ Stop Auto-Posts' 
+              {schedulerLoading
+                ? '⏳ Loading...'
+                : schedulerRunning
+                  ? '⏸️ Stop Auto-Posts'
                   : '▶️ Start Auto-Posts'
               }
             </button>
-            <button 
+            <button
               className={`generate-btn follower-btn ${followerServiceRunning ? 'running' : ''}`}
               onClick={toggleFollowerService}
               disabled={followerServiceLoading}
             >
-              {followerServiceLoading 
-                ? '⏳ Loading...' 
-                : followerServiceRunning 
-                  ? '⏸️ Stop Followers' 
+              {followerServiceLoading
+                ? '⏳ Loading...'
+                : followerServiceRunning
+                  ? '⏸️ Stop Followers'
                   : '👥 Start Followers'
               }
             </button>
-            <button 
+            <button
               className="generate-btn trigger-btn"
               onClick={triggerFollowerUpdate}
               title="Trigger follower update now"

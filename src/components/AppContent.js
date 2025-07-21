@@ -16,11 +16,11 @@ import UserProfilePage from './UserProfilePage';
 import UserCreation from './UserCreation';
 import LoadingScreen from './LoadingScreen';
 import MessagesPage from './MessagesPage';
-import FloatingSettingsButton from './FloatingSettingsButton';
+import FloatingButtonContainer from './FloatingButtonContainer';
 
 function AppContent() {
   const { loading, needsOnboarding, currentUser } = useUser();
-  
+
   // State
   const [characters, setCharacters] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -58,7 +58,7 @@ function AppContent() {
         api.getCharacters(),
         api.getPosts()
       ]);
-      
+
       setCharacters(charactersResponse.data);
       console.log('[APP] Loaded posts:', postsResponse.data.map(p => ({
         id: p.id,
@@ -68,7 +68,7 @@ function AppContent() {
         content: p.content.substring(0, 30) + '...'
       })));
       setPosts(postsResponse.data);
-      
+
       await loadCommentsForPosts(postsResponse.data);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -78,13 +78,13 @@ function AppContent() {
   };
 
   const loadCommentsForPosts = async (posts) => {
-    const commentsPromises = posts.map(post => 
+    const commentsPromises = posts.map(post =>
       api.getComments(post.id).then(response => ({
         postId: post.id,
         comments: response.data
       }))
     );
-    
+
     const commentsResults = await Promise.all(commentsPromises);
     const commentsMap = {};
     commentsResults.forEach(({ postId, comments }) => {
@@ -127,7 +127,7 @@ function AppContent() {
     console.log('[WebSocket] New post received:', payload);
     const newPost = payload.data;
     addPost(newPost);
-    
+
     if (Notification.permission === 'granted') {
       new Notification(`New post by ${newPost.character.name}`, {
         body: newPost.content.substring(0, 100) + '...',
@@ -144,9 +144,9 @@ function AppContent() {
 
   const handleLikeUpdate = (payload) => {
     console.log('[WebSocket] Like update received:', payload);
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === payload.data.postId 
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.id === payload.data.postId
           ? { ...post, likes: payload.data.likes }
           : post
       )
@@ -160,7 +160,7 @@ function AppContent() {
   // Action handlers
   const handleGeneratePost = async (includeImage = false) => {
     if (generating) return;
-    
+
     setGenerating(true);
     try {
       const randomCharacterId = Math.floor(Math.random() * 3) + 1;
@@ -186,23 +186,23 @@ function AppContent() {
 
   const handleGenerateAvatars = async () => {
     if (generatingAvatars) return;
-    
+
     setGeneratingAvatars(true);
     try {
       console.log('Generating avatars for all characters...');
-      
+
       for (let i = 1; i <= 3; i++) {
         try {
           const response = await api.generateAvatar(i);
-          
-          setCharacters(prevCharacters => 
-            prevCharacters.map(char => 
-              char.id === i 
+
+          setCharacters(prevCharacters =>
+            prevCharacters.map(char =>
+              char.id === i
                 ? { ...char, avatar: response.data.avatarUrl }
                 : char
             )
           );
-          
+
           console.log(`Generated avatar for character ${i}`);
         } catch (error) {
           console.error(`Failed to generate avatar for character ${i}:`, error);
@@ -218,15 +218,15 @@ function AppContent() {
 
   const handleGenerateComment = async (postId) => {
     if (generatingComment) return;
-    
+
     setGeneratingComment(postId);
     try {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
-      
+
       const availableCharacters = characters.filter(char => char.id !== post.userId);
       const randomCommenter = availableCharacters[Math.floor(Math.random() * availableCharacters.length)];
-      
+
       const response = await api.generateComment(
         post.content,
         randomCommenter.id,
@@ -291,14 +291,14 @@ function AppContent() {
 
   return (
     <div className="app">
-      <Header 
+      <Header
         onGeneratePost={handleGeneratePost}
         onGenerateAvatars={handleGenerateAvatars}
         generating={generating}
         generatingAvatars={generatingAvatars}
         isConnected={isConnected}
       />
-      
+
       <main className="main-content">
         <Routes>
           <Route path="/" element={
@@ -315,10 +315,11 @@ function AppContent() {
           } />
           <Route path="/user/:userId" element={<UserProfile />} />
           <Route path="/profile/:userId" element={<UserProfilePage />} />
+          <Route path="/messages" element={<MessagesPage />} />
           <Route path="/messages/:characterId" element={<MessagesPage />} />
         </Routes>
       </main>
-      <FloatingSettingsButton />
+      <FloatingButtonContainer />
     </div>
   );
 }
