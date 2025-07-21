@@ -73,6 +73,18 @@ export const api = {
     axios.post(`${API_BASE_URL}/conversations/${conversationId}/messages`, { content }),
   getUnreadMessageCount: () => axios.get(`${API_BASE_URL}/messages/unread-count`),
 
+  // AI Settings
+  getAllAIConfigs: () => axios.get(`${API_BASE_URL}/ai-settings`),
+  getAIConfig: (type) => axios.get(`${API_BASE_URL}/ai-settings/${type}`),
+  updateAIConfig: (type, config) => axios.put(`${API_BASE_URL}/ai-settings/${type}`, config),
+  resetAIConfig: (type) => axios.post(`${API_BASE_URL}/ai-settings/${type}/reset`),
+  searchAvailableModels: (query, page, pageSize) =>
+    axios.get(`${API_BASE_URL}/ai-settings/models/search`, {
+      params: { q: query, page, pageSize }
+    }),
+  getModelCategories: () => axios.get(`${API_BASE_URL}/ai-settings/models/categories`),
+  clearModelsCache: () => axios.post(`${API_BASE_URL}/ai-settings/models/clear-cache`),
+
   // Test
   test: () => axios.get(`${API_BASE_URL}/test`)
 };

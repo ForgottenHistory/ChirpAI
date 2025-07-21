@@ -16,6 +16,7 @@ import UserProfilePage from './UserProfilePage';
 import UserCreation from './UserCreation';
 import LoadingScreen from './LoadingScreen';
 import MessagesPage from './MessagesPage';
+import FloatingSettingsButton from './FloatingSettingsButton';
 
 function AppContent() {
   const { loading, needsOnboarding, currentUser } = useUser();
@@ -317,6 +318,7 @@ function AppContent() {
           <Route path="/messages/:characterId" element={<MessagesPage />} />
         </Routes>
       </main>
+      <FloatingSettingsButton />
     </div>
   );
 }

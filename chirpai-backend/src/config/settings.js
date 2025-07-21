@@ -6,6 +6,11 @@ class Settings {
   constructor() {
     this.config = config;
     this.configPath = path.join(__dirname, '../../config/default.json');
+    
+    // Runtime overrides - stored in memory
+    this.runtimeOverrides = {};
+    
+    console.log('[CONFIG] Settings initialized');
   }
 
   // Scheduler settings
@@ -26,9 +31,22 @@ class Settings {
     return this.config.get('rateLimit');
   }
 
-  // AI settings
+  // AI settings with runtime overrides
   get ai() {
-    return this.config.get('ai');
+    const baseAI = this.config.get('ai');
+    
+    // Apply runtime overrides
+    const result = JSON.parse(JSON.stringify(baseAI)); // Deep clone
+    
+    if (this.runtimeOverrides.ai) {
+      for (const [type, overrides] of Object.entries(this.runtimeOverrides.ai)) {
+        if (result[type]) {
+          result[type] = { ...result[type], ...overrides };
+        }
+      }
+    }
+    
+    return result;
   }
 
   // Image generation settings
@@ -61,25 +79,74 @@ class Settings {
     return this.config.get('server.imageUrl');
   }
 
-  // Get all settings
+  // Get all settings with runtime overrides applied
   getAll() {
-    return this.config.util.toObject();
+    const base = this.config.util.toObject();
+    
+    // Apply runtime overrides
+    if (this.runtimeOverrides.ai) {
+      for (const [type, overrides] of Object.entries(this.runtimeOverrides.ai)) {
+        if (base.ai && base.ai[type]) {
+          base.ai[type] = { ...base.ai[type], ...overrides };
+        }
+      }
+    }
+    
+    return base;
   }
 
-  // Update settings (runtime only - doesn't persist to file)
+  // Update settings (runtime only)
   updateRuntime(path, value) {
-    this.config.util.setModuleDefaults('runtime', { [path]: value });
-    console.log(`[CONFIG] Updated runtime setting ${path} = ${value}`);
+    console.log(`[CONFIG] Updating runtime setting ${path}`);
+    
+    // Handle AI config updates specifically
+    if (path.startsWith('ai.')) {
+      const [, type] = path.split('.');
+      
+      if (!this.runtimeOverrides.ai) {
+        this.runtimeOverrides.ai = {};
+      }
+      
+      this.runtimeOverrides.ai[type] = value;
+      console.log(`[CONFIG] Runtime override set for ai.${type}`);
+      return;
+    }
+    
+    // For other paths, you could implement similar logic
+    console.log(`[CONFIG] Runtime update for ${path} not implemented yet`);
   }
 
-  // Get a specific setting by dot notation path
+  // Get a specific setting by dot notation path with overrides
   get(path) {
+    // Handle AI settings specially
+    if (path.startsWith('ai.')) {
+      const [, type, ...rest] = path.split('.');
+      const aiConfig = this.ai;
+      
+      if (rest.length === 0) {
+        return aiConfig[type];
+      } else {
+        const property = rest.join('.');
+        return this.getNestedProperty(aiConfig[type], property);
+      }
+    }
+    
     return this.config.get(path);
+  }
+
+  // Helper to get nested properties
+  getNestedProperty(obj, path) {
+    return path.split('.').reduce((current, key) => current && current[key], obj);
   }
 
   // Check if a setting exists
   has(path) {
-    return this.config.has(path);
+    try {
+      this.get(path);
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   // Save current config to file (for persistence)
@@ -88,6 +155,10 @@ class Settings {
       const currentConfig = this.getAll();
       fs.writeFileSync(this.configPath, JSON.stringify(currentConfig, null, 2));
       console.log('[CONFIG] Configuration saved to file');
+      
+      // Clear runtime overrides since they're now persisted
+      this.runtimeOverrides = {};
+      
       return true;
     } catch (error) {
       console.error('[CONFIG] Error saving configuration:', error);
@@ -98,6 +169,9 @@ class Settings {
   // Reload config from file
   reloadFromFile() {
     try {
+      // Clear runtime overrides
+      this.runtimeOverrides = {};
+      
       delete require.cache[require.resolve('config')];
       this.config = require('config');
       console.log('[CONFIG] Configuration reloaded from file');
@@ -108,90 +182,15 @@ class Settings {
     }
   }
 
-  // Get configuration for display (with descriptions)
-  getConfigWithDescriptions() {
-    return {
-      scheduler: {
-        posting: {
-          minPostInterval: {
-            value: this.posting.minPostInterval,
-            description: "Minimum minutes between automatic posts",
-            type: "number",
-            min: 1,
-            max: 60
-          },
-          maxPostInterval: {
-            value: this.posting.maxPostInterval,
-            description: "Maximum minutes between automatic posts",
-            type: "number", 
-            min: 1,
-            max: 120
-          },
-          minCommentInterval: {
-            value: this.posting.minCommentInterval,
-            description: "Minimum minutes between automatic comments",
-            type: "number",
-            min: 1,
-            max: 30
-          },
-          maxCommentInterval: {
-            value: this.posting.maxCommentInterval,
-            description: "Maximum minutes between automatic comments", 
-            type: "number",
-            min: 1,
-            max: 60
-          }
-        },
-        chances: {
-          imagePostChance: {
-            value: this.chances.imagePostChance,
-            description: "Chance (0.0-1.0) that automatic posts include images",
-            type: "number",
-            min: 0,
-            max: 1,
-            step: 0.1
-          },
-          commentChance: {
-            value: this.chances.commentChance,
-            description: "Chance (0.0-1.0) that AI will comment on posts",
-            type: "number", 
-            min: 0,
-            max: 1,
-            step: 0.1
-          }
-        }
-      },
-      rateLimit: {
-        minDelay: {
-          value: this.rateLimit.minDelay,
-          description: "Minimum milliseconds between AI API requests",
-          type: "number",
-          min: 1000,
-          max: 10000
-        }
-      },
-      ai: {
-        model: {
-          value: this.ai.model,
-          description: "AI model to use for text generation",
-          type: "string"
-        },
-        maxTokensPost: {
-          value: this.ai.maxTokensPost,
-          description: "Maximum tokens for post generation",
-          type: "number",
-          min: 50,
-          max: 500
-        },
-        maxTokensComment: {
-          value: this.ai.maxTokensComment,
-          description: "Maximum tokens for comment generation", 
-          type: "number",
-          min: 20,
-          max: 200
-        }
-      }
-    };
+  // Clear runtime overrides
+  clearRuntimeOverrides() {
+    this.runtimeOverrides = {};
+    console.log('[CONFIG] Runtime overrides cleared');
+  }
+
+  // Get runtime overrides (for debugging)
+  getRuntimeOverrides() {
+    return JSON.parse(JSON.stringify(this.runtimeOverrides));
   }
 }
 

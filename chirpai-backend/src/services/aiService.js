@@ -202,7 +202,7 @@ const updateAIConfig = (type, updates) => {
   const currentConfig = settings.ai[type];
   const newConfig = { ...currentConfig, ...updates };
   
-  // Update the settings
+  // Update the settings using the new runtime system
   settings.updateRuntime(`ai.${type}`, newConfig);
   
   console.log(`[AI_CONFIG] Updated ${type} configuration:`, updates);

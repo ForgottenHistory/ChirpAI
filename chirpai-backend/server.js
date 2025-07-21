@@ -20,6 +20,7 @@ const userRoutes = require('./src/routes/userRoutes');
 const sessionRoutes = require('./src/routes/sessionRoutes');
 const imageRoutes = require('./src/routes/imageRoutes');
 const messageRoutes = require('./src/routes/messageRoutes');
+const aiSettingsRoutes = require('./src/routes/aiSettingsRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -50,6 +51,7 @@ app.use('/api', userRoutes);
 app.use('/api', sessionRoutes);
 app.use('/api', imageRoutes);
 app.use('/api', messageRoutes);
+app.use('/api', aiSettingsRoutes);
 
 // WebSocket stats route
 app.get('/api/websocket/stats', (req, res) => {
