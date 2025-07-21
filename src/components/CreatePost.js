@@ -29,7 +29,7 @@ const CreatePost = ({ onPostCreated }) => {
       // Create post object for frontend
       const newPost = {
         id: response.data.id,
-        userId: currentUser.id,
+        userId: 0, // Set to 0 for user posts
         user_id: currentUser.id,
         user_type: 'user',
         content: response.data.content,

@@ -36,12 +36,23 @@ export const useUserProfileData = (userId) => {
         
         setUser(foundUser);
         
-        // Fetch all posts - users don't post yet, so this will be empty
-        // But we keep it for future functionality
+        // Fetch all posts - filter for user posts
         const postsResponse = await api.getPosts();
-        const userPosts = postsResponse.data.filter(post => 
-          post.user_id === parseInt(userId) && post.user_type === 'user'
-        );
+        console.log(`[PROFILE] All posts from API:`, postsResponse.data.map(p => ({
+          id: p.id,
+          user_type: p.user_type,
+          user_id: p.user_id,
+          userId: p.userId,
+          content: p.content.substring(0, 30) + '...'
+        })));
+        
+        const userPosts = postsResponse.data.filter(post => {
+          const isUserPost = post.user_type === 'user' && post.user_id === parseInt(userId);
+          console.log(`[PROFILE] Checking post ${post.id}: user_type=${post.user_type}, user_id=${post.user_id}, target_userId=${userId}, isMatch=${isUserPost}`);
+          return isUserPost;
+        });
+        
+        console.log(`[PROFILE] Found ${userPosts.length} posts for user ${userId}:`, userPosts);
         
         setPosts(userPosts);
         

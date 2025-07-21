@@ -47,6 +47,21 @@ const UserProfilePage = () => {
     setSelectedPost(null);
   };
 
+  // Get the correct author for the modal based on post type
+  const getModalAuthor = (post) => {
+    if (!post) return null;
+    
+    const isUserPost = post.user_type === 'user';
+    if (isUserPost) {
+      // For user posts, return the user data in character format
+      return userAsCharacter;
+    } else {
+      // For character posts, get from characters array
+      const character = characters.find(char => char.id === post.userId);
+      return character;
+    }
+  };
+
   // Handle modal keyboard events
   useEffect(() => {
     const handleEscape = (e) => {
@@ -156,7 +171,7 @@ const UserProfilePage = () => {
       {/* Photo Modal */}
       <PhotoModal
         post={selectedPost}
-        character={userAsCharacter}
+        character={getModalAuthor(selectedPost)}
         isVisible={!!selectedPost}
         likedPosts={likedPosts}
         generatingComment={generatingComment}

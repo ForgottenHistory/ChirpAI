@@ -16,6 +16,9 @@ const PhotoModal = ({
 }) => {
   if (!isVisible || !post) return null;
 
+  console.log('[PHOTO_MODAL] Post data:', post);
+  console.log('[PHOTO_MODAL] Character data:', character);
+
   const postComments = getCommentsForPost(post.id);
 
   return (
@@ -35,8 +38,18 @@ const PhotoModal = ({
         
         <div className="photo-modal-right">
           <div className="photo-modal-header">
-            <Link to={`/user/${character.id}`} className="modal-user-link">
-              <img src={character.avatar} alt={character.name} className="modal-avatar" />
+            <Link 
+              to={post.user_type === 'user' ? `/profile/${character.id}` : `/user/${character.id}`} 
+              className="modal-user-link"
+            >
+              <img 
+                src={character.avatar || '/avatars/avatar1.png'} 
+                alt={character.name} 
+                className="modal-avatar"
+                onError={(e) => {
+                  e.target.src = '/avatars/avatar1.png';
+                }}
+              />
               <span className="modal-username">@{character.username}</span>
             </Link>
             <span className="modal-timestamp">{post.timestamp}</span>
