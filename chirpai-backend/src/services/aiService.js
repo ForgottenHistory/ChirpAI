@@ -3,6 +3,30 @@ const { getCharacterPersonalities } = require('./characterService');
 const rateLimitService = require('./rateLimitService');
 const settings = require('../config/settings');
 
+// Helper function to count approximate tokens (rough estimate)
+const estimateTokens = (text) => {
+  // Rough approximation: 1 token ≈ 0.75 words ≈ 4 characters
+  return Math.ceil(text.length / 4);
+};
+
+// Helper function to truncate context to fit within token limits
+const truncateContext = (messages, maxContextTokens) => {
+  let totalTokens = 0;
+  const truncatedMessages = [];
+  
+  // Start from the most recent messages and work backwards
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const messageTokens = estimateTokens(messages[i].content);
+    if (totalTokens + messageTokens > maxContextTokens) {
+      break;
+    }
+    totalTokens += messageTokens;
+    truncatedMessages.unshift(messages[i]);
+  }
+  
+  return truncatedMessages;
+};
+
 const generatePost = async (characterId) => {
   const characterPersonalities = getCharacterPersonalities();
   const character = characterPersonalities[characterId];
@@ -13,6 +37,8 @@ const generatePost = async (characterId) => {
 
   console.log(`[${new Date().toISOString()}] Generating post for ${character.name} (ID: ${characterId})`);
 
+  const aiConfig = settings.ai.posts;
+  
   const prompt = `You are ${character.name}, an AI character with this personality: ${character.personality}
 
 Write a short social media post (like Instagram/Twitter) that ${character.name} would make. Keep it under 280 characters. Include relevant emojis and maybe a hashtag. Make it feel natural and in-character.
@@ -24,10 +50,15 @@ Just return the post content, nothing else.`;
   // Queue the AI request to handle rate limiting
   const requestFunction = async () => {
     return await openai.chat.completions.create({
-      model: settings.ai.model,
-      max_tokens: settings.ai.maxTokensPost,
+      model: aiConfig.model,
+      max_tokens: aiConfig.maxTokens,
+      temperature: aiConfig.temperature,
+      top_p: aiConfig.topP,
+      top_k: aiConfig.topK,
+      min_p: aiConfig.minP,
+      repetition_penalty: aiConfig.repetitionPenalty,
       messages: [
-        { role: 'system', content: 'You are a helpful assistant that generates social media posts for AI characters.' },
+        { role: 'system', content: aiConfig.systemPrompt },
         { role: 'user', content: prompt }
       ],
     });
@@ -51,16 +82,16 @@ const generateComment = async (postContent, commenterCharacterId, originalPoster
   let originalPosterInfo;
   
   if (originalPosterType === 'user') {
-    // Commenting on a user's post
     originalPosterInfo = originalPosterName;
   } else {
-    // Commenting on a character's post
     const originalPoster = characterPersonalities[originalPosterId];
     if (!originalPoster) {
       throw new Error('Original poster character not found');
     }
     originalPosterInfo = originalPoster.name;
   }
+
+  const aiConfig = settings.ai.comments;
 
   const prompt = `You are ${commenter.name}, responding to a social media post by ${originalPosterInfo}.
 
@@ -75,10 +106,15 @@ Just return the comment, nothing else.`;
   // Queue the AI request to handle rate limiting
   const requestFunction = async () => {
     return await openai.chat.completions.create({
-      model: settings.ai.model,
-      max_tokens: settings.ai.maxTokensComment,
+      model: aiConfig.model,
+      max_tokens: aiConfig.maxTokens,
+      temperature: aiConfig.temperature,
+      top_p: aiConfig.topP,
+      top_k: aiConfig.topK,
+      min_p: aiConfig.minP,
+      repetition_penalty: aiConfig.repetitionPenalty,
       messages: [
-        { role: 'system', content: 'You are a helpful assistant that generates social media comments for AI characters.' },
+        { role: 'system', content: aiConfig.systemPrompt },
         { role: 'user', content: prompt }
       ],
     });
@@ -98,15 +134,19 @@ const generateDirectMessage = async (characterId, userName, userMessage, convers
 
   console.log(`[DM] Generating response for ${character.name} to ${userName}`);
 
-  // Build conversation context from recent messages
+  const aiConfig = settings.ai.messages;
+  
+  // Build conversation context from recent messages, respecting token limits
   let contextText = '';
   if (conversationHistory.length > 0) {
-    const recentMessages = conversationHistory.slice(-10); // Last 10 messages for context
-    contextText = '\n\nRecent conversation:\n';
-    recentMessages.forEach(msg => {
-      const sender = msg.sender_type === 'user' ? userName : character.name;
-      contextText += `${sender}: ${msg.content}\n`;
-    });
+    const truncatedHistory = truncateContext(conversationHistory, aiConfig.contextTokens * 0.6); // Use 60% of context for history
+    if (truncatedHistory.length > 0) {
+      contextText = '\n\nRecent conversation:\n';
+      truncatedHistory.forEach(msg => {
+        const sender = msg.sender_type === 'user' ? userName : character.name;
+        contextText += `${sender}: ${msg.content}\n`;
+      });
+    }
   }
 
   const prompt = `You are ${character.name}, having a private conversation with ${userName}.
@@ -122,10 +162,15 @@ Just return the message response, nothing else.`;
   // Queue the AI request to handle rate limiting
   const requestFunction = async () => {
     return await openai.chat.completions.create({
-      model: settings.ai.model,
-      max_tokens: settings.ai.maxTokensComment,
+      model: aiConfig.model,
+      max_tokens: aiConfig.maxTokens,
+      temperature: aiConfig.temperature,
+      top_p: aiConfig.topP,
+      top_k: aiConfig.topK,
+      min_p: aiConfig.minP,
+      repetition_penalty: aiConfig.repetitionPenalty,
       messages: [
-        { role: 'system', content: 'You are a helpful assistant that generates direct messages for AI characters. You have access to conversation history to provide contextual responses.' },
+        { role: 'system', content: aiConfig.systemPrompt },
         { role: 'user', content: prompt }
       ],
     });
@@ -138,9 +183,37 @@ Just return the message response, nothing else.`;
   return response;
 };
 
-// Update the module.exports to include the new function
+// Get current AI configuration for a specific type
+const getAIConfig = (type) => {
+  const validTypes = ['posts', 'comments', 'messages'];
+  if (!validTypes.includes(type)) {
+    throw new Error(`Invalid AI config type. Must be one of: ${validTypes.join(', ')}`);
+  }
+  return settings.ai[type];
+};
+
+// Update AI configuration for a specific type
+const updateAIConfig = (type, updates) => {
+  const validTypes = ['posts', 'comments', 'messages'];
+  if (!validTypes.includes(type)) {
+    throw new Error(`Invalid AI config type. Must be one of: ${validTypes.join(', ')}`);
+  }
+  
+  const currentConfig = settings.ai[type];
+  const newConfig = { ...currentConfig, ...updates };
+  
+  // Update the settings
+  settings.updateRuntime(`ai.${type}`, newConfig);
+  
+  console.log(`[AI_CONFIG] Updated ${type} configuration:`, updates);
+  return newConfig;
+};
+
 module.exports = {
   generatePost,
   generateComment,
-  generateDirectMessage
+  generateDirectMessage,
+  getAIConfig,
+  updateAIConfig,
+  estimateTokens
 };

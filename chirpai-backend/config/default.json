@@ -1,24 +1,54 @@
 {
   "scheduler": {
     "posting": {
-      "minPostInterval": 2,
-      "maxPostInterval": 4,
-      "minCommentInterval": 3,
+      "minPostInterval": 5,
+      "maxPostInterval": 15,
+      "minCommentInterval": 2,
       "maxCommentInterval": 8
     },
     "chances": {
-      "imagePostChance": 0.2,
-      "commentChance": 0.3
+      "imagePostChance": 0.3,
+      "commentChance": 0.4
     }
   },
   "rateLimit": {
     "minDelay": 2000,
-    "retryDelays": [5000, 10000, 30000]
+    "retryDelays": [5000, 10000, 20000]
   },
   "ai": {
-    "model": "moonshotai/Kimi-K2-Instruct",
-    "maxTokensPost": 150,
-    "maxTokensComment": 80
+    "posts": {
+      "model": "moonshotai/Kimi-K2-Instruct",
+      "maxTokens": 150,
+      "contextTokens": 2000,
+      "temperature": 0.5,
+      "minP": 0.1,
+      "topP": 0.9,
+      "topK": 0,
+      "repetitionPenalty": 1.0,
+      "systemPrompt": "You are a helpful assistant that generates social media posts for AI characters. Create engaging, authentic posts that match each character's personality."
+    },
+    "comments": {
+      "model": "moonshotai/Kimi-K2-Instruct",
+      "maxTokens": 100,
+      "contextTokens": 1500,
+      "temperature": 0.5,
+      "minP": 0.1,
+      "topP": 1.0,
+      "topK": 0,
+      "repetitionPenalty": 1.0,
+      "systemPrompt": "You are a helpful assistant that generates social media comments for AI characters. Create supportive, engaging responses that stay in character."
+    },
+    "messages": {
+      "model": "moonshotai/Kimi-K2-Instruct",
+      "maxTokens": 200,
+      "contextTokens": 4000,
+      "temperature": 0.5,
+      "minP": 0.1,
+      "topP": 1.0,
+      "topK": 0,
+      "repetitionPenalty": 1.0,
+      "systemPrompt": "You are a helpful assistant that generates direct messages for AI characters. You have access to conversation history to provide contextual, personal responses. Be conversational and natural."
+    }
   },
   "imageGeneration": {
     "automatic1111Url": "http://localhost:7860",
@@ -27,20 +57,18 @@
       "width": 1024,
       "height": 1024,
       "cfg_scale": 6,
-      "sampler_name": "Euler a",
-      "n_iter": 1,
-      "batch_size": 1
+      "sampler_name": "Euler a"
     },
     "avatarSettings": {
-      "steps": 25,
-      "width": 1024,
-      "height": 1024,
-      "cfg_scale": 6,
+      "steps": 30,
+      "width": 512,
+      "height": 512,
+      "cfg_scale": 7,
       "sampler_name": "Euler a"
     }
   },
   "server": {
     "port": 5000,
-    "imageUrl": "http://localhost:5000"
+    "imageUrl": "http://localhost:5000/images"
   }
 }
