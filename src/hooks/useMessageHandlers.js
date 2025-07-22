@@ -18,6 +18,7 @@ export const useMessageHandlers = ({
   const [sending, setSending] = useState(false);
   const [generatingVariation, setGeneratingVariation] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [forcingResponse, setForcingResponse] = useState(false);
 
   const initializeMessageVariations = async (fetchedMessages) => {
     // Load variations for each character message
@@ -227,10 +228,35 @@ export const useMessageHandlers = ({
     }
   };
 
+  const handleForceResponse = async () => {
+    if (!conversation || forcingResponse) return;
+
+    setForcingResponse(true);
+
+    try {
+      console.log('[FORCE_RESPONSE] Forcing AI response for conversation:', conversation.id);
+
+      // Call the force response API endpoint
+      await api.forceAIResponse(conversation.id);
+
+      console.log('[FORCE_RESPONSE] Successfully triggered AI response');
+
+      // Refresh inbox to update last message
+      refreshInbox();
+      
+    } catch (error) {
+      console.error('Error forcing AI response:', error);
+      throw new Error('Failed to force AI response');
+    } finally {
+      setForcingResponse(false);
+    }
+  };
+
   return {
     sending,
     generatingVariation,
     deleting,
+    forcingResponse,
     handleSendMessage,
     handleMessageClick,
     handleSwipeLeft,
@@ -239,6 +265,7 @@ export const useMessageHandlers = ({
     handleRegenerate,
     handleContinue,
     handleDelete,
+    handleForceResponse,
     initializeMessageVariations
   };
 };

@@ -44,6 +44,7 @@ const MessagesPage = () => {
     sending,
     generatingVariation,
     deleting,
+    forcingResponse,
     handleSendMessage,
     handleMessageClick,
     handleSwipeLeft,
@@ -52,6 +53,7 @@ const MessagesPage = () => {
     handleRegenerate,
     handleContinue,
     handleDelete,
+    handleForceResponse,
     initializeMessageVariations
   } = useMessageHandlers({
     conversation,
@@ -304,9 +306,11 @@ const MessagesPage = () => {
         onRegenerate={handleRegenerate}
         onContinue={handleContinue}
         onDelete={handleDelete}
+        onForceResponse={handleForceResponse}
         isGenerating={isTyping || sending || generatingVariation}
         generatingVariation={generatingVariation}
         deleting={deleting}
+        forcingResponse={forcingResponse}
       />
     </div>
   );

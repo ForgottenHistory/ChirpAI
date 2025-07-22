@@ -179,3 +179,39 @@
 .delete-btn.deleting .generating-spinner svg {
   animation: spin 1s linear infinite;
 }
+
+/* Force AI Response button */
+.force-response-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.force-response-btn:hover:not(.disabled) {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+.force-response-btn.forcing {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  cursor: not-allowed;
+}
+
+.force-response-btn.forcing .generating-spinner svg {
+  animation: spin 1s linear infinite;
+}
+
+/* Delete button */
+.delete-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.delete-btn:hover:not(.disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.delete-btn.deleting {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  cursor: not-allowed;
+}
+
+.delete-btn.deleting .generating-spinner svg {
+  animation: spin 1s linear infinite;
+}

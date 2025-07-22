@@ -11,12 +11,14 @@ const MessageFloatingButtons = ({
   onRegenerate,
   onContinue,
   onDelete,
+  onForceResponse,
   isGenerating = false,
   generatingVariation = false,
-  deleting = false
+  deleting = false,
+  forcingResponse = false
 }) => {
   // Don't show buttons if no message is selected or if generating
-  if (!selectedMessageId || isGenerating) {
+  if (!selectedMessageId || isGenerating || forcingResponse) {
     return null;
   }
 
@@ -26,7 +28,7 @@ const MessageFloatingButtons = ({
       <button
         className={`message-floating-btn swipe-btn ${!swipeInfo.canSwipeLeft ? 'disabled' : ''}`}
         onClick={() => swipeInfo.canSwipeLeft && onSwipeLeft()}
-        disabled={!swipeInfo.canSwipeLeft || deleting}
+        disabled={!swipeInfo.canSwipeLeft || deleting || forcingResponse}
         title="Previous variation"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -45,7 +47,7 @@ const MessageFloatingButtons = ({
       <button
         className={`message-floating-btn swipe-btn ${!swipeInfo.canSwipeRight ? 'disabled' : ''}`}
         onClick={() => swipeInfo.canSwipeRight && onSwipeRight()}
-        disabled={!swipeInfo.canSwipeRight || deleting}
+        disabled={!swipeInfo.canSwipeRight || deleting || forcingResponse}
         title="Next variation"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -57,7 +59,7 @@ const MessageFloatingButtons = ({
       <button
         className={`message-floating-btn generate-variation-btn ${generatingVariation ? 'generating' : ''}`}
         onClick={onGenerateVariation}
-        disabled={generatingVariation || deleting}
+        disabled={generatingVariation || deleting || forcingResponse}
         title={generatingVariation ? "Generating..." : "Generate new variation"}
       >
         {generatingVariation ? (
@@ -80,7 +82,7 @@ const MessageFloatingButtons = ({
       <button
         className="message-floating-btn regenerate-btn"
         onClick={onRegenerate}
-        disabled={deleting}
+        disabled={deleting || forcingResponse}
         title="Regenerate message (clears all variations)"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -95,7 +97,7 @@ const MessageFloatingButtons = ({
       <button
         className="message-floating-btn continue-btn"
         onClick={onContinue}
-        disabled={deleting}
+        disabled={deleting || forcingResponse}
         title="Continue this message"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -104,11 +106,34 @@ const MessageFloatingButtons = ({
         </svg>
       </button>
 
+      {/* Force AI Response Button */}
+      <button
+        className={`message-floating-btn force-response-btn ${forcingResponse ? 'forcing' : ''}`}
+        onClick={onForceResponse}
+        disabled={forcingResponse || deleting}
+        title={forcingResponse ? "Forcing AI response..." : "Force AI to send a message"}
+      >
+        {forcingResponse ? (
+          <div className="generating-spinner">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3"/>
+              <path d="M12 2A10 10 0 0 1 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </button>
+
       {/* Delete From Here Button */}
       <button
         className={`message-floating-btn delete-btn ${deleting ? 'deleting' : ''}`}
         onClick={onDelete}
-        disabled={deleting}
+        disabled={deleting || forcingResponse}
         title={deleting ? "Deleting..." : "Delete this message and everything after it"}
       >
         {deleting ? (

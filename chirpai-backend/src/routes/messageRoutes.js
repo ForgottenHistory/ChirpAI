@@ -7,6 +7,7 @@ const {
   sendUserMessage,
   getUnreadCount
 } = require('../controllers/messageController');
+const { forceAIResponse } = require('../controllers/forceResponseController');
 
 // Get all conversations for current user
 router.get('/conversations', getConversations);
@@ -19,6 +20,9 @@ router.get('/conversations/:conversationId/messages', getMessages);
 
 // Send a message in a conversation
 router.post('/conversations/:conversationId/messages', sendUserMessage);
+
+// Force AI response in a conversation
+router.post('/conversations/:conversationId/force-response', forceAIResponse);
 
 // Get unread message count
 router.get('/messages/unread-count', getUnreadCount);
