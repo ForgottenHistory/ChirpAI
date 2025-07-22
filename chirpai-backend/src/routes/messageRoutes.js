@@ -5,20 +5,22 @@ const {
   getOrCreateConversationWithCharacter,
   getMessages,
   sendUserMessage,
-  getUnreadCount,
-  variationOperations
+  getUnreadCount
 } = require('../controllers/messageController');
 
-// Existing conversation routes
+// Get all conversations for current user
 router.get('/conversations', getConversations);
-router.get('/conversations/character/:characterId', getOrCreateConversationWithCharacter);
-router.get('/conversations/:conversationId/messages', getMessages);
-router.post('/conversations/:conversationId/messages', sendUserMessage);
-router.get('/messages/unread-count', getUnreadCount);
 
-// New message variation routes for swipe functionality
-router.post('/messages/:messageId/variation', variationOperations.generateVariation);
-router.post('/messages/:messageId/regenerate', variationOperations.regenerateMessage);
-router.post('/messages/:messageId/continue', variationOperations.continueMessage);
+// Get or create conversation with a specific character
+router.get('/conversations/character/:characterId', getOrCreateConversationWithCharacter);
+
+// Get messages for a specific conversation
+router.get('/conversations/:conversationId/messages', getMessages);
+
+// Send a message in a conversation
+router.post('/conversations/:conversationId/messages', sendUserMessage);
+
+// Get unread message count
+router.get('/messages/unread-count', getUnreadCount);
 
 module.exports = router;
