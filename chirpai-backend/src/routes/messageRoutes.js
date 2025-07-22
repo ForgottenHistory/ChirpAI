@@ -8,6 +8,7 @@ const {
   getUnreadCount
 } = require('../controllers/messageController');
 const { forceAIResponse } = require('../controllers/forceResponseController');
+const { cancelAIResponse } = require('../controllers/cancelResponseController');
 
 // Get all conversations for current user
 router.get('/conversations', getConversations);
@@ -26,5 +27,8 @@ router.post('/conversations/:conversationId/force-response', forceAIResponse);
 
 // Get unread message count
 router.get('/messages/unread-count', getUnreadCount);
+
+// Cancel AI response
+router.post('/conversations/:conversationId/cancel', cancelAIResponse);
 
 module.exports = router;

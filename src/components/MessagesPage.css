@@ -423,3 +423,12 @@
     margin-right: 8px;
   }
 }
+
+.cancel-btn {
+  background: #ef4444 !important;
+  color: white;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #dc2626 !important;
+}

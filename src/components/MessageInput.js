@@ -1,7 +1,7 @@
 // src/components/MessageInput.js
 import React, { useState, useRef, useEffect } from 'react';
 
-const MessageInput = ({ conversation, onSendMessage, sending }) => {
+const MessageInput = ({ conversation, onSendMessage, sending, onCancelResponse }) => {
   const [newMessage, setNewMessage] = useState('');
   const inputRef = useRef(null);
 
@@ -51,6 +51,12 @@ const MessageInput = ({ conversation, onSendMessage, sending }) => {
     }
   };
 
+  const handleCancelClick = () => {
+    if (onCancelResponse) {
+      onCancelResponse();
+    }
+  };
+
   return (
     <div className="message-input-container">
       <form onSubmit={handleSubmit} className="message-form">
@@ -66,13 +72,23 @@ const MessageInput = ({ conversation, onSendMessage, sending }) => {
           maxLength={500}
           autoFocus
         />
-        <button
-          type="submit"
-          className="send-btn"
-          disabled={!newMessage.trim() || sending}
-        >
-          {sending ? '...' : 'Send'}
-        </button>
+        {sending ? (
+          <button
+            type="button"
+            className="send-btn cancel-btn"
+            onClick={handleCancelClick}
+          >
+            Cancel
+          </button>
+        ) : (
+          <button
+            type="submit"
+            className="send-btn"
+            disabled={!newMessage.trim()}
+          >
+            Send
+          </button>
+        )}
       </form>
     </div>
   );

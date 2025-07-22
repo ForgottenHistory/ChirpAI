@@ -4,6 +4,9 @@ const { generateDirectMessage, calculateTypingTime } = require('../../services/a
 const webSocketService = require('../../services/websocketService');
 const typingIndicatorHandler = require('./typingIndicatorHandler');
 
+// Store active AI response timeouts
+const activeResponses = new Map();
+
 // Handle AI response generation and sending
 const handleAIResponse = async (conversationId, currentUser, userMessage, conversationHistory) => {
   let conversation = null;
@@ -26,8 +29,25 @@ const handleAIResponse = async (conversationId, currentUser, userMessage, conver
       return;
     }
 
+    // Mark this conversation as having an active response
+    const responseData = {
+      character,
+      startTime: Date.now(),
+      stage: 'starting'
+    };
+    activeResponses.set(conversationId, responseData);
+    console.log(`[AI_RESPONSE] Started response for conversation ${conversationId}`);
+
     // Start typing sequence
     await typingIndicatorHandler.startTypingSequence(conversationId, character);
+    
+    // Check if cancelled during typing start
+    if (!activeResponses.has(conversationId)) {
+      console.log('[AI_RESPONSE] Cancelled during typing start');
+      return;
+    }
+    
+    responseData.stage = 'generating';
 
     // Generate AI response
     const aiResponse = await generateDirectMessage(
@@ -37,11 +57,32 @@ const handleAIResponse = async (conversationId, currentUser, userMessage, conver
       conversationHistory
     );
 
+    // Check if cancelled during generation
+    if (!activeResponses.has(conversationId)) {
+      console.log('[AI_RESPONSE] Cancelled during generation');
+      typingIndicatorHandler.stopTyping(conversationId, character);
+      return;
+    }
+
+    responseData.stage = 'typing_delay';
+    responseData.aiResponse = aiResponse;
+
     // Calculate realistic typing time
     const typingDuration = calculateTypingTime(aiResponse);
+    console.log(`[AI_RESPONSE] Generated response, will send after ${typingDuration}ms typing delay`);
 
-    // Show typing for the calculated duration
-    setTimeout(() => {
+    // Store the timeout so it can be cancelled
+    const timeoutId = setTimeout(() => {
+      // Double-check if response was cancelled
+      const currentResponse = activeResponses.get(conversationId);
+      if (!currentResponse) {
+        console.log('[AI_RESPONSE] Response was cancelled during typing delay');
+        return;
+      }
+
+      // Clean up our tracking
+      activeResponses.delete(conversationId);
+
       // Stop typing indicator
       typingIndicatorHandler.stopTyping(conversationId, character);
 
@@ -60,8 +101,14 @@ const handleAIResponse = async (conversationId, currentUser, userMessage, conver
 
     }, typingDuration);
 
+    // Store the timeout ID for potential cancellation
+    responseData.timeoutId = timeoutId;
+
   } catch (error) {
     console.error('[AI_RESPONSE] Error generating AI response:', error);
+    
+    // Clean up on error
+    activeResponses.delete(conversationId);
     
     // Make sure to stop typing indicator on error
     if (character) {
@@ -76,6 +123,49 @@ const handleAIResponse = async (conversationId, currentUser, userMessage, conver
   }
 };
 
+// Cancel an active AI response
+const cancelAIResponse = (conversationId) => {
+  const activeResponse = activeResponses.get(conversationId);
+  
+  if (activeResponse) {
+    console.log(`[AI_RESPONSE] Cancelling response in stage: ${activeResponse.stage}`);
+    
+    // Clear the timeout if it exists
+    if (activeResponse.timeoutId) {
+      clearTimeout(activeResponse.timeoutId);
+    }
+    
+    // Stop typing indicator
+    typingIndicatorHandler.stopTyping(conversationId, activeResponse.character);
+    
+    // Remove from tracking
+    activeResponses.delete(conversationId);
+    
+    console.log(`[AI_RESPONSE] Successfully cancelled response for conversation ${conversationId}`);
+    return true;
+  }
+  
+  console.log(`[AI_RESPONSE] No active response found for conversation ${conversationId}`);
+  return false;
+};
+
+// Get active response info (for debugging)
+const getActiveResponses = () => {
+  const responses = [];
+  for (const [conversationId, data] of activeResponses.entries()) {
+    responses.push({
+      conversationId,
+      character: data.character.name,
+      startTime: data.startTime,
+      stage: data.stage,
+      duration: Date.now() - data.startTime
+    });
+  }
+  return responses;
+};
+
 module.exports = {
-  handleAIResponse
+  handleAIResponse,
+  cancelAIResponse,
+  getActiveResponses
 };

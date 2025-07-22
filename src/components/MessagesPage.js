@@ -28,6 +28,7 @@ const MessagesPage = () => {
   const [error, setError] = useState(null);
   const [showInbox, setShowInbox] = useState(true);
   const [selectedMessageId, setSelectedMessageId] = useState(null);
+  const [cancelToken, setCancelToken] = useState(null);
 
   // Custom hooks
   const { isTyping, setIsTyping } = useTypingState();
@@ -195,6 +196,45 @@ const MessagesPage = () => {
     navigate(`/messages/${selectedCharacterId}`);
   };
 
+  const handleSendMessageWithCancel = async (content) => {
+    // Create cancel token
+    const token = { cancelled: false };
+    setCancelToken(token);
+    
+    try {
+      await handleSendMessage(content);
+    } finally {
+      // Clear cancel token when done
+      setCancelToken(null);
+    }
+  };
+
+  const handleCancelResponse = async () => {
+    console.log('[CANCEL] Cancel button clicked', { 
+      cancelToken: !!cancelToken, 
+      conversationId: conversation?.id,
+      isTyping,
+      sending 
+    });
+    
+    if (cancelToken) {
+      cancelToken.cancelled = true;
+      setCancelToken(null);
+    }
+    
+    setIsTyping(false);
+    
+    if (conversation?.id) {
+      try {
+        console.log('[CANCEL] Calling backend cancel API...');
+        const response = await api.cancelAIResponse(conversation.id);
+        console.log('[CANCEL] Backend response:', response.data);
+      } catch (err) {
+        console.error('[CANCEL] Error canceling AI response:', err);
+      }
+    }
+  };
+
   // Get swipe info for selected message
   const selectedSwipeInfo = selectedMessageId ? getSwipeInfo(selectedMessageId) : {
     hasVariations: false,
@@ -282,8 +322,9 @@ const MessagesPage = () => {
             {/* Message Input */}
             <MessageInput
               conversation={conversation}
-              onSendMessage={handleSendMessage}
-              sending={sending}
+              onSendMessage={handleSendMessageWithCancel}
+              sending={sending || isTyping}
+              onCancelResponse={handleCancelResponse}
             />
           </>
         ) : (

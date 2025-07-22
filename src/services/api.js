@@ -101,6 +101,10 @@ export const api = {
   getModelCategories: () => axios.get(`${API_BASE_URL}/ai-settings/models/categories`),
   clearModelsCache: () => axios.post(`${API_BASE_URL}/ai-settings/models/clear-cache`),
 
+// Cancel AI response
+  cancelAIResponse: (conversationId) =>
+    axios.post(`${API_BASE_URL}/conversations/${conversationId}/cancel`),
+  
   // Test
   test: () => axios.get(`${API_BASE_URL}/test`)
 };
