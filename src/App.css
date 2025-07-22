@@ -66,9 +66,12 @@
   cursor: pointer;
 }
 
-.user-info {
+.post-header .user-info {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  flex: 1;
 }
 
 .timestamp {
