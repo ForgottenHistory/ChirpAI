@@ -9,206 +9,333 @@ const {
 const { getCurrentUser } = require('../services/userService');
 const { getCharacterById } = require('../services/characterService');
 const { generateDirectMessage } = require('../services/aiService');
+const webSocketService = require('../services/websocketService');
 
-// Get all conversations for current user
-const getConversations = (req, res) => {
-  try {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      return res.status(401).json({ error: 'No user logged in' });
-    }
+// Utility functions
+const formatMessageTime = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+};
 
-    const conversations = getUserConversations(currentUser.id);
-    res.json(conversations);
-  } catch (error) {
-    console.error('Error fetching conversations:', error);
-    res.status(500).json({ error: 'Failed to fetch conversations' });
+const validateUser = (currentUser) => {
+  if (!currentUser) {
+    throw new Error('No user logged in');
   }
 };
 
-// Get or create conversation with a character
-const getOrCreateConversationWithCharacter = (req, res) => {
-  try {
-    const { characterId } = req.params;
-    const currentUser = getCurrentUser();
+const validateMessageContent = (content) => {
+  if (!content || !content.trim()) {
+    throw new Error('Message content is required');
+  }
+};
 
-    if (!currentUser) {
-      return res.status(401).json({ error: 'No user logged in' });
+// Core conversation operations
+const conversationOperations = {
+  async getConversations(req, res) {
+    try {
+      const currentUser = getCurrentUser();
+      validateUser(currentUser);
+
+      const conversations = getUserConversations(currentUser.id);
+      res.json(conversations);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      res.status(error.message === 'No user logged in' ? 401 : 500)
+         .json({ error: error.message });
     }
+  },
 
-    const character = getCharacterById(parseInt(characterId));
-    if (!character) {
-      return res.status(404).json({ error: 'Character not found' });
-    }
+  async getOrCreateConversationWithCharacter(req, res) {
+    try {
+      const { characterId } = req.params;
+      const currentUser = getCurrentUser();
+      validateUser(currentUser);
 
-    const conversation = getOrCreateConversation(currentUser.id, parseInt(characterId));
-
-    res.json({
-      ...conversation,
-      character: {
-        id: character.id,
-        username: character.username,
-        name: character.name,
-        avatar: character.avatar
+      const character = getCharacterById(parseInt(characterId));
+      if (!character) {
+        return res.status(404).json({ error: 'Character not found' });
       }
-    });
-  } catch (error) {
-    console.error('Error getting conversation:', error);
-    res.status(500).json({ error: 'Failed to get conversation' });
+
+      const conversation = getOrCreateConversation(currentUser.id, parseInt(characterId));
+
+      res.json({
+        ...conversation,
+        character: {
+          id: character.id,
+          username: character.username,
+          name: character.name,
+          avatar: character.avatar
+        }
+      });
+    } catch (error) {
+      console.error('Error getting conversation:', error);
+      res.status(error.message === 'No user logged in' ? 401 : 500)
+         .json({ error: error.message });
+    }
+  },
+
+  async getMessages(req, res) {
+    try {
+      const { conversationId } = req.params;
+      const currentUser = getCurrentUser();
+      validateUser(currentUser);
+
+      const messages = getConversationMessages(parseInt(conversationId));
+
+      // Mark character messages as read
+      markMessagesAsRead(parseInt(conversationId), 'character');
+
+      res.json(messages);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      res.status(error.message === 'No user logged in' ? 401 : 500)
+         .json({ error: error.message });
+    }
   }
 };
 
-// Get messages for a conversation
-const getMessages = (req, res) => {
-  try {
-    const { conversationId } = req.params;
-    const currentUser = getCurrentUser();
+// Message sending and AI response handling
+const messageOperations = {
+  async sendUserMessage(req, res) {
+    try {
+      const { conversationId } = req.params;
+      const { content } = req.body;
+      const currentUser = getCurrentUser();
 
-    if (!currentUser) {
-      return res.status(401).json({ error: 'No user logged in' });
+      validateUser(currentUser);
+      validateMessageContent(content);
+
+      // Get conversation history for context
+      const conversationHistory = getConversationMessages(parseInt(conversationId), 20);
+
+      // Send user message
+      const userMessage = sendMessage(
+        parseInt(conversationId),
+        'user',
+        currentUser.id,
+        content.trim()
+      );
+
+      console.log(`[DM] User ${currentUser.username} sent message: "${content}"`);
+
+      // Return user message immediately
+      res.json({ userMessage });
+
+      // Handle AI response asynchronously
+      await messageOperations.handleAIResponse(
+        parseInt(conversationId),
+        content.trim(),
+        conversationHistory,
+        currentUser
+      );
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      res.status(error.message === 'No user logged in' ? 401 : 
+                error.message === 'Message content is required' ? 400 : 500)
+         .json({ error: error.message });
     }
+  },
 
-    const messages = getConversationMessages(parseInt(conversationId));
+  async handleAIResponse(conversationId, userContent, conversationHistory, currentUser) {
+    try {
+      // Get conversation details
+      const getConversation = require('../database/db').prepare('SELECT * FROM conversations WHERE id = ?');
+      const conversation = getConversation.get(conversationId);
 
-    // Mark character messages as read
-    markMessagesAsRead(parseInt(conversationId), 'character');
+      if (!conversation) return;
 
-    res.json(messages);
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-    res.status(500).json({ error: 'Failed to fetch messages' });
-  }
-};
-
-// Send a message
-const sendUserMessage = async (req, res) => {
-  try {
-    const { conversationId } = req.params;
-    const { content } = req.body;
-    const currentUser = getCurrentUser();
-    const webSocketService = require('../services/websocketService');
-
-    if (!currentUser) {
-      return res.status(401).json({ error: 'No user logged in' });
-    }
-
-    if (!content || !content.trim()) {
-      return res.status(400).json({ error: 'Message content is required' });
-    }
-
-    // Get conversation history for context
-    const conversationHistory = getConversationMessages(parseInt(conversationId), 20);
-
-    // Send user message
-    const userMessage = sendMessage(
-      parseInt(conversationId),
-      'user',
-      currentUser.id,
-      content.trim()
-    );
-
-    console.log(`[DM] User ${currentUser.username} sent message: "${content}"`);
-
-    // Return user message immediately
-    res.json({ userMessage });
-
-    // Get conversation details for AI response (async)
-    const getConversation = require('../database/db').prepare('SELECT * FROM conversations WHERE id = ?');
-    const conversation = getConversation.get(parseInt(conversationId));
-
-    if (conversation) {
-      // Get character info for typing indicator
       const character = getCharacterById(conversation.character_id);
+      if (!character) return;
 
-      if (character) {
-        // Add realistic delay before showing typing indicator (500ms - 1.5s)
-        const typingDelay = Math.random() * 1000 + 500;
+      // Add realistic delay before showing typing indicator
+      const typingDelay = Math.random() * 1000 + 500;
 
-        setTimeout(async () => {
-          // Start typing indicator
-          webSocketService.broadcastTypingStart(
-            parseInt(conversationId),
-            character.id,
-            character.name
+      setTimeout(async () => {
+        // Start typing indicator
+        webSocketService.broadcastTypingStart(
+          conversationId,
+          character.id,
+          character.name
+        );
+
+        try {
+          // Generate AI response
+          const aiResponse = await generateDirectMessage(
+            conversation.character_id,
+            currentUser.display_name,
+            userContent,
+            conversationHistory
           );
 
-          try {
-            // Generate AI response
-            const aiResponse = await generateDirectMessage(
-              conversation.character_id,
-              currentUser.display_name,
-              content.trim(),
-              conversationHistory
-            );
+          // Calculate realistic typing time based on response length
+          const { calculateTypingTime } = require('../services/aiService');
+          const typingDuration = calculateTypingTime(aiResponse);
 
-            // Calculate realistic typing time based on response length
-            const { calculateTypingTime } = require('../services/aiService');
-            const typingDuration = calculateTypingTime(aiResponse);
-
-            // Show typing for the calculated duration
-            setTimeout(() => {
-              // Stop typing indicator
-              webSocketService.broadcastTypingStop(
-                parseInt(conversationId),
-                character.id,
-                character.name
-              );
-
-              // Send AI response
-              const aiMessage = sendMessage(
-                parseInt(conversationId),
-                'character',
-                conversation.character_id,
-                aiResponse
-              );
-
-              // Broadcast the new message
-              webSocketService.broadcastNewDirectMessage(aiMessage, conversation, character);
-
-              console.log(`[DM] AI character ${character.name} responded: "${aiResponse}"`);
-
-            }, typingDuration);
-
-          } catch (aiError) {
-            console.error('Error generating AI response:', aiError);
-
-            // Make sure to stop typing indicator on error
+          // Show typing for the calculated duration
+          setTimeout(() => {
+            // Stop typing indicator
             webSocketService.broadcastTypingStop(
-              parseInt(conversationId),
+              conversationId,
               character.id,
               character.name
             );
-          }
-        }, typingDelay);
-      }
-    }
 
-  } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ error: 'Failed to send message' });
+            // Send AI response
+            const aiMessage = sendMessage(
+              conversationId,
+              'character',
+              conversation.character_id,
+              aiResponse
+            );
+
+            // Broadcast the new message
+            webSocketService.broadcastNewDirectMessage(aiMessage, conversation, character);
+
+            console.log(`[DM] AI character ${character.name} responded: "${aiResponse}"`);
+
+          }, typingDuration);
+
+        } catch (aiError) {
+          console.error('Error generating AI response:', aiError);
+
+          // Make sure to stop typing indicator on error
+          webSocketService.broadcastTypingStop(
+            conversationId,
+            character.id,
+            character.name
+          );
+        }
+      }, typingDelay);
+
+    } catch (error) {
+      console.error('Error handling AI response:', error);
+    }
   }
 };
 
-// Get unread message count
-const getUnreadCount = (req, res) => {
-  try {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      return res.status(401).json({ error: 'No user logged in' });
-    }
+// Utility operations
+const utilityOperations = {
+  async getUnreadCount(req, res) {
+    try {
+      const currentUser = getCurrentUser();
+      validateUser(currentUser);
 
-    const count = getUnreadMessageCount(currentUser.id);
-    res.json({ unreadCount: count });
-  } catch (error) {
-    console.error('Error getting unread count:', error);
-    res.status(500).json({ error: 'Failed to get unread count' });
+      const count = getUnreadMessageCount(currentUser.id);
+      res.json({ unreadCount: count });
+    } catch (error) {
+      console.error('Error getting unread count:', error);
+      res.status(error.message === 'No user logged in' ? 401 : 500)
+         .json({ error: error.message });
+    }
   }
 };
 
+// Message variation operations (for swipe functionality)
+const variationOperations = {
+  async generateVariation(req, res) {
+    try {
+      const { messageId } = req.params;
+      const { originalContent } = req.body;
+      const currentUser = getCurrentUser();
+
+      validateUser(currentUser);
+
+      // TODO: Implement variation generation logic
+      // This would involve re-prompting the AI with slightly different parameters
+      // or asking for alternative responses to the same input
+
+      const variations = [
+        "That's an interesting perspective! I'd love to hear more about your thoughts on this.",
+        "I appreciate you sharing that with me. What made you think about this topic?",
+        "That's fascinating! I've been thinking about similar things lately.",
+        "Thanks for bringing this up - it's given me a lot to think about.",
+        "I find your viewpoint really compelling. How did you come to this conclusion?"
+      ];
+
+      const randomVariation = variations[Math.floor(Math.random() * variations.length)];
+
+      res.json({
+        messageId: parseInt(messageId),
+        variation: randomVariation,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Error generating variation:', error);
+      res.status(error.message === 'No user logged in' ? 401 : 500)
+         .json({ error: error.message });
+    }
+  },
+
+  async regenerateMessage(req, res) {
+    try {
+      const { messageId } = req.params;
+      const currentUser = getCurrentUser();
+
+      validateUser(currentUser);
+
+      // TODO: Implement message regeneration logic
+      // This would clear all existing variations and generate a completely new response
+
+      res.json({
+        messageId: parseInt(messageId),
+        message: 'Message regeneration not yet implemented',
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Error regenerating message:', error);
+      res.status(error.message === 'No user logged in' ? 401 : 500)
+         .json({ error: error.message });
+    }
+  },
+
+  async continueMessage(req, res) {
+    try {
+      const { messageId } = req.params;
+      const currentUser = getCurrentUser();
+
+      validateUser(currentUser);
+
+      // TODO: Implement message continuation logic
+      // This would append to the existing message content
+
+      res.json({
+        messageId: parseInt(messageId),
+        message: 'Message continuation not yet implemented',
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Error continuing message:', error);
+      res.status(error.message === 'No user logged in' ? 401 : 500)
+         .json({ error: error.message });
+    }
+  }
+};
+
+// Export all operations
 module.exports = {
-  getConversations,
-  getOrCreateConversationWithCharacter,
-  getMessages,
-  sendUserMessage,
-  getUnreadCount
+  // Existing exports for backward compatibility
+  getConversations: conversationOperations.getConversations,
+  getOrCreateConversationWithCharacter: conversationOperations.getOrCreateConversationWithCharacter,
+  getMessages: conversationOperations.getMessages,
+  sendUserMessage: messageOperations.sendUserMessage,
+  getUnreadCount: utilityOperations.getUnreadCount,
+
+  // New modular exports
+  conversationOperations,
+  messageOperations,
+  utilityOperations,
+  variationOperations,
+
+  // Utility functions
+  formatMessageTime,
+  validateUser,
+  validateMessageContent
 };
