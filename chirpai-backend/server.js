@@ -21,6 +21,7 @@ const sessionRoutes = require('./src/routes/sessionRoutes');
 const imageRoutes = require('./src/routes/imageRoutes');
 const messageRoutes = require('./src/routes/messageRoutes');
 const aiSettingsRoutes = require('./src/routes/aiSettingsRoutes');
+const messageVariationRoutes = require('./src/routes/messageVariationRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -63,6 +64,9 @@ app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
+
+// Message Variations route
+app.use('/api', messageVariationRoutes);
 
 // Start server
 server.listen(PORT, () => {

@@ -76,25 +76,16 @@ export const useMessageHandlers = ({
     setGeneratingVariation(true);
 
     try {
-      console.log('[VARIATION] Generating test variation for message:', selectedMessageId);
+      console.log('[VARIATION] Generating variation for message:', selectedMessageId);
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call backend API to generate variation
+      const response = await api.generateMessageVariation(selectedMessageId);
+      const { variation, variationIndex, totalVariations } = response.data;
 
-      // Generate a simple test variation
-      const testVariations = [
-        "That's an interesting perspective! I'd love to hear more about your thoughts on this.",
-        "I appreciate you sharing that with me. What made you think about this topic?",
-        "That's fascinating! I've been thinking about similar things lately.",
-        "Thanks for bringing this up - it's given me a lot to think about.",
-        "I find your viewpoint really compelling. How did you come to this conclusion?"
-      ];
-
-      const randomVariation = testVariations[Math.floor(Math.random() * testVariations.length)];
+      console.log('[VARIATION] Generated variation:', variation);
 
       // Add the new variation to our swipe system
-      addMessageVariation(selectedMessageId, randomVariation);
-      console.log('[VARIATION] Added test variation:', randomVariation);
+      addMessageVariation(selectedMessageId, variation);
 
       // Auto-swipe to the new variation
       setTimeout(() => {
@@ -131,12 +122,20 @@ export const useMessageHandlers = ({
     if (!selectedMessageId) return;
 
     try {
-      // Clear existing variations
+      console.log('[REGENERATE] Regenerating message:', selectedMessageId);
+
+      // Clear existing variations first
       clearMessageVariations(selectedMessageId);
       
-      // TODO: Implement actual regeneration with API call
-      console.log('Regenerate message:', selectedMessageId);
-      alert('Regenerate feature coming next!');
+      // Call backend API to regenerate message
+      const response = await api.regenerateMessage(selectedMessageId);
+      const { variation } = response.data;
+
+      console.log('[REGENERATE] Regenerated message:', variation);
+
+      // Add the regenerated message as the first (and only) variation
+      addMessageVariation(selectedMessageId, variation, true);
+      
     } catch (error) {
       console.error('Error regenerating message:', error);
       throw new Error('Failed to regenerate message');
@@ -147,9 +146,16 @@ export const useMessageHandlers = ({
     if (!selectedMessageId) return;
 
     try {
-      // TODO: Implement continue functionality
+      // For continue functionality, we could extend the current message
+      // This could be implemented as a special type of variation
       console.log('Continue message:', selectedMessageId);
-      alert('Continue feature coming next!');
+      
+      // For now, show placeholder
+      alert('Continue feature: This would extend the current message with additional content');
+      
+      // Future implementation could call something like:
+      // const response = await api.continueMessage(selectedMessageId);
+      
     } catch (error) {
       console.error('Error continuing message:', error);
       throw new Error('Failed to continue message');

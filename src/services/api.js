@@ -85,6 +85,14 @@ export const api = {
   getModelCategories: () => axios.get(`${API_BASE_URL}/ai-settings/models/categories`),
   clearModelsCache: () => axios.post(`${API_BASE_URL}/ai-settings/models/clear-cache`),
 
+  // Message Variations
+  generateMessageVariation: (messageId) =>
+    axios.post(`${API_BASE_URL}/messages/${messageId}/variations`),
+  getMessageVariations: (messageId) =>
+    axios.get(`${API_BASE_URL}/messages/${messageId}/variations`),
+  regenerateMessage: (messageId) =>
+    axios.post(`${API_BASE_URL}/messages/${messageId}/regenerate`),
+
   // Test
   test: () => axios.get(`${API_BASE_URL}/test`)
 };
