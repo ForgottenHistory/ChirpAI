@@ -48,6 +48,13 @@ class RateLimitService {
         request.resolve(result);
 
       } catch (error) {
+        console.error(`[RATE_LIMIT] Request failed:`, {
+          status: error.status,
+          code: error.code,
+          message: error.message,
+          type: error.type
+        });
+
         if (error.status === 429 && request.retryCount < this.retryDelays.length) {
           // Rate limited, schedule retry
           const retryDelay = this.retryDelays[request.retryCount];
@@ -60,9 +67,24 @@ class RateLimitService {
             });
             this.processQueue();
           }, retryDelay);
+        } else if (error.status === 500) {
+          // Server error - could be temporary
+          if (request.retryCount < 2) {
+            console.log(`[RATE_LIMIT] Server error (500), retrying in 5000ms (attempt ${request.retryCount + 1})`);
+            setTimeout(() => {
+              this.requestQueue.unshift({
+                ...request,
+                retryCount: request.retryCount + 1
+              });
+              this.processQueue();
+            }, 5000);
+          } else {
+            console.error(`[RATE_LIMIT] Server error after ${request.retryCount + 1} attempts, giving up`);
+            request.reject(new Error(`AI service temporarily unavailable (500 error after retries)`));
+          }
         } else {
-          // Non-rate-limit error or max retries reached
-          console.error(`[RATE_LIMIT] Request failed:`, error.message);
+          // Other errors or max retries reached
+          console.error(`[RATE_LIMIT] Request failed permanently:`, error.message);
           request.reject(error);
         }
       }

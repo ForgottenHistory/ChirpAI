@@ -6,10 +6,13 @@ const typingIndicatorHandler = require('./typingIndicatorHandler');
 
 // Handle AI response generation and sending
 const handleAIResponse = async (conversationId, currentUser, userMessage, conversationHistory) => {
+  let conversation = null;
+  let character = null;
+  
   try {
     // Get conversation details
     const getConversation = require('../../database/db').prepare('SELECT * FROM conversations WHERE id = ?');
-    const conversation = getConversation.get(conversationId);
+    conversation = getConversation.get(conversationId);
 
     if (!conversation) {
       console.error('[AI_RESPONSE] Conversation not found:', conversationId);
@@ -17,7 +20,7 @@ const handleAIResponse = async (conversationId, currentUser, userMessage, conver
     }
 
     // Get character info
-    const character = getCharacterById(conversation.character_id);
+    character = getCharacterById(conversation.character_id);
     if (!character) {
       console.error('[AI_RESPONSE] Character not found:', conversation.character_id);
       return;
@@ -61,9 +64,14 @@ const handleAIResponse = async (conversationId, currentUser, userMessage, conver
     console.error('[AI_RESPONSE] Error generating AI response:', error);
     
     // Make sure to stop typing indicator on error
-    const character = getCharacterById(conversation?.character_id);
     if (character) {
       typingIndicatorHandler.stopTyping(conversationId, character);
+    } else if (conversation) {
+      // Fallback: try to get character again
+      const fallbackCharacter = getCharacterById(conversation.character_id);
+      if (fallbackCharacter) {
+        typingIndicatorHandler.stopTyping(conversationId, fallbackCharacter);
+      }
     }
   }
 };
