@@ -18,12 +18,32 @@ export const useMessageHandlers = ({
   const [sending, setSending] = useState(false);
   const [generatingVariation, setGeneratingVariation] = useState(false);
 
-  const initializeMessageVariations = (fetchedMessages) => {
-    fetchedMessages.forEach(message => {
+  const initializeMessageVariations = async (fetchedMessages) => {
+    // Load variations for each character message
+    for (const message of fetchedMessages) {
       if (message.sender_type === 'character') {
-        addMessageVariation(message.id, message.content, true);
+        try {
+          // Load existing variations from backend
+          const response = await api.getMessageVariations(message.id);
+          const { variationContents } = response.data;
+          
+          if (variationContents && variationContents.length > 0) {
+            // Initialize with all stored variations
+            variationContents.forEach((content, index) => {
+              addMessageVariation(message.id, content, index === 0);
+            });
+            console.log(`[VARIATION] Loaded ${variationContents.length} variations for message ${message.id}`);
+          } else {
+            // Fallback: Initialize with original content only
+            addMessageVariation(message.id, message.content, true);
+          }
+        } catch (error) {
+          console.error(`Error loading variations for message ${message.id}:`, error);
+          // Fallback: Initialize with original content
+          addMessageVariation(message.id, message.content, true);
+        }
       }
-    });
+    }
   };
 
   const handleSendMessage = async (content) => {
@@ -80,7 +100,7 @@ export const useMessageHandlers = ({
 
       // Call backend API to generate variation
       const response = await api.generateMessageVariation(selectedMessageId);
-      const { variation, variationIndex, totalVariations } = response.data;
+      const { variation } = response.data;
 
       console.log('[VARIATION] Generated variation:', variation);
 

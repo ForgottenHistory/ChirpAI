@@ -57,12 +57,15 @@ const getMessageVariations = (req, res) => {
       return res.status(401).json({ error: 'No user logged in' });
     }
 
+    // Get detailed variation data
     const variations = messageVariationService.getVariations(parseInt(messageId));
+    const variationContents = messageVariationService.getVariationContents(parseInt(messageId));
     const count = messageVariationService.getVariationCount(parseInt(messageId));
 
     res.json({
       messageId: parseInt(messageId),
-      variations,
+      variations: variations, // Detailed data with metadata
+      variationContents: variationContents, // Just the content strings for frontend
       count
     });
 

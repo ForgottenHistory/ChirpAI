@@ -151,5 +151,20 @@ const initializeTables = (db) => {
       FOREIGN KEY (conversation_id) REFERENCES conversations (id)
     )
   `);
+
+  // Message variations table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS message_variations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message_id INTEGER NOT NULL,
+      variation_index INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      is_original BOOLEAN DEFAULT FALSE,
+      created_at DATETIME DEFAULT (datetime('now')),
+      FOREIGN KEY (message_id) REFERENCES messages (id),
+      UNIQUE(message_id, variation_index)
+    )
+  `);
 };
+
 module.exports = { initializeTables };
