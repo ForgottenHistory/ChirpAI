@@ -93,6 +93,10 @@ export const api = {
   regenerateMessage: (messageId) =>
     axios.post(`${API_BASE_URL}/messages/${messageId}/regenerate`),
 
+  // Delete Messages
+  deleteMessagesFrom: (conversationId, messageId) =>
+    axios.delete(`${API_BASE_URL}/conversations/${conversationId}/messages/from/${messageId}`),
+
   // Test
   test: () => axios.get(`${API_BASE_URL}/test`)
 };

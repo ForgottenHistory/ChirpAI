@@ -17,6 +17,7 @@ export const useMessageHandlers = ({
 }) => {
   const [sending, setSending] = useState(false);
   const [generatingVariation, setGeneratingVariation] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const initializeMessageVariations = async (fetchedMessages) => {
     // Load variations for each character message
@@ -182,9 +183,54 @@ export const useMessageHandlers = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (!selectedMessageId || deleting) return;
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this message and everything after it? This action cannot be undone.'
+    );
+    
+    if (!confirmed) return;
+
+    setDeleting(true);
+
+    try {
+      console.log('[DELETE] Deleting from message:', selectedMessageId);
+
+      // Call backend API to delete message and everything after it
+      const response = await api.deleteMessagesFrom(conversation.id, selectedMessageId);
+      const { deletedCount } = response.data;
+
+      console.log(`[DELETE] Deleted ${deletedCount} messages from conversation`);
+
+      // Remove deleted messages from local state
+      setMessages(prev => {
+        const selectedIndex = prev.findIndex(msg => msg.id === selectedMessageId);
+        if (selectedIndex === -1) return prev;
+        
+        // Keep only messages before the selected one
+        return prev.slice(0, selectedIndex);
+      });
+
+      // Clear selection
+      setSelectedMessageId(null);
+
+      // Refresh inbox to update last message
+      refreshInbox();
+      
+    } catch (error) {
+      console.error('Error deleting messages:', error);
+      throw new Error('Failed to delete messages');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return {
     sending,
     generatingVariation,
+    deleting,
     handleSendMessage,
     handleMessageClick,
     handleSwipeLeft,
@@ -192,6 +238,7 @@ export const useMessageHandlers = ({
     handleGenerateVariation,
     handleRegenerate,
     handleContinue,
+    handleDelete,
     initializeMessageVariations
   };
 };

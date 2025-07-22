@@ -22,6 +22,7 @@ const imageRoutes = require('./src/routes/imageRoutes');
 const messageRoutes = require('./src/routes/messageRoutes');
 const aiSettingsRoutes = require('./src/routes/aiSettingsRoutes');
 const messageVariationRoutes = require('./src/routes/messageVariationRoutes');
+const messageDeleteRoutes = require('./src/routes/messageDeleteRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -67,6 +68,7 @@ app.use((err, req, res, next) => {
 
 // Message Variations route
 app.use('/api', messageVariationRoutes);
+app.use('/api', messageDeleteRoutes);
 
 // Start server
 server.listen(PORT, () => {

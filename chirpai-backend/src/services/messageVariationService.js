@@ -1,6 +1,7 @@
 const variationDatabaseService = require('./variations/variationDatabaseService');
 const variationContextService = require('./variations/variationContextService');
 const variationGeneratorService = require('./variations/variationGeneratorService');
+const messageDeleteService = require('./variations/messageDeleteService');
 
 class MessageVariationService {
   constructor() {
@@ -61,6 +62,15 @@ class MessageVariationService {
 
   async changeMessageTone(messageId, userId, characterId, tone) {
     return await variationGeneratorService.changeMessageTone(messageId, userId, characterId, tone);
+  }
+
+  // Delete functionality
+  deleteMessagesFrom(conversationId, fromMessageId, userId) {
+    return messageDeleteService.deleteMessagesFrom(conversationId, fromMessageId, userId);
+  }
+
+  deleteSingleMessage(messageId, userId) {
+    return messageDeleteService.deleteSingleMessage(messageId, userId);
   }
 }
 
